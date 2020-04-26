@@ -28,5 +28,33 @@
 
 # Executables
 *.exe
-*.out
+#*.out
 *.app
+
+# build/bin directories
+**/bin
+/build*
+
+# misc./temp directories
+bck
+misc
+scrap
+tmp
+temp
+stdout*.log
+
+# vim swp files
+*.swp
+
+# GPTL log files
+gptl*.log*
+
+# LaTeX build files
+*.aux
+*.toc
+*.synctex.gz
+manual/*.log
+manual/*.out
+manual/*.bbl
+manual/*.blg
+manual/*.bak
