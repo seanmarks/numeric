@@ -6,7 +6,7 @@
 
 #include "numeric/Array.h"
 #include "numeric/OpenMP.h"
-#include "numeric/VectorRef.h"
+#include "numeric/CArrayRef.h"
 
 static constexpr int DIM = 3;
 
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 	std::unique_ptr<rvec> coords = std::unique_ptr<rvec>( new rvec[len] );
 	rvec* coords_ptr = coords.get();
 
-	VectorRef<rvec> coords_ref( &coords_ptr, &len );
+	CArrayRef<rvec> coords_ref( &coords_ptr, &len );
 	std::cout << "coords.size() [ref] = " << coords_ref.size() << "\n";
 	int i = 0;
 	for ( auto it = coords_ref.begin(); it != coords_ref.end(); ++it, ++i ) {
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
 
 	const rvec* coords_const_ptr = coords.get();
-	VectorRef<const rvec> coords_const_ref( &coords_const_ptr, &len );
+	CArrayConstRef<rvec> coords_const_ref( &coords_const_ptr, &len );
 
 	return 0;
 }
