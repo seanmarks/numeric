@@ -1,16 +1,19 @@
-#include "main.h"
 
 #include <iostream>
+#include <memory>
 
-#include <numeric/OpenMP.h>
-#include <numeric/Array.h>
+#include "main.h"
 
+#include "numeric/Array.h"
+#include "numeric/OpenMP.h"
+#include "numeric/VectorRef.h"
+
+static constexpr int DIM = 3;
 
 int main(int argc, char* argv[])
 {
 	std::cout << "Hello" << "\n";
 
-	const int DIM = 3;
 	numeric::Array<double, DIM> x(5.0);
 
 	numeric::Array<float, DIM> y(2.0);
@@ -31,6 +34,33 @@ int main(int argc, char* argv[])
 	}
 
 	std::cout << "y + y_d = " << y + y_d << "\n";
+
+
+	//----- Test ref container -----//
+
+	using rvec = double[DIM];
+	int len = 4;
+
+	std::unique_ptr<rvec> coords = std::unique_ptr<rvec>( new rvec[len] );
+	rvec* coords_ptr = coords.get();
+
+	VectorRef<rvec> coords_ref( &coords_ptr, &len );
+	std::cout << "coords.size() [ref] = " << coords_ref.size() << "\n";
+	int i = 0;
+	for ( auto it = coords_ref.begin(); it != coords_ref.end(); ++it, ++i ) {
+		std::cout << "i: ";
+
+		for ( int d=0; d<DIM; ++d ) {
+			(*it)[d] = 4+3;
+
+			std::cout << " " << coords_ptr[i][d];
+		}
+		std::cout << "\n";
+	}
+
+
+	const rvec* coords_const_ptr = coords.get();
+	VectorRef<const rvec> coords_const_ref( &coords_const_ptr, &len );
 
 	return 0;
 }
