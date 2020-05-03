@@ -54,7 +54,7 @@ class CArrayRef
 	{
 		data_ptr_ = data_ptr;
 		size_ptr_ = size_ptr;
-#ifndef DNDEBUG
+#ifndef NDEBUG
 		// TODO Check for null, negative sizes, etc.
 #endif
 	}

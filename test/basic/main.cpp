@@ -62,5 +62,7 @@ int main(int argc, char* argv[])
 	const rvec* coords_const_ptr = coords.get();
 	CArrayConstRef<rvec> coords_const_ref( &coords_const_ptr, &len );
 
+	std::cout << coords_const_ref[2][0] << std::endl;
+
 	return 0;
 }
