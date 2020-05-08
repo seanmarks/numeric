@@ -62,7 +62,7 @@ endforeach()
 
 
 set(OMP_SIMD_TEST_NAMES "")
-list(APPEND OMP_SIMD_TEST_NAMES "omp-simd")
+list(APPEND OMP_SIMD_TEST_NAMES "omp-simd/real")
 
 foreach(TEST_NAME IN LISTS OMP_SIMD_TEST_NAMES)
 	# TODO: move to function: build test driver with custom 'main' (link to library)
