@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.15)
 # - These contain useful helper functions
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(setIfUnset)
+include(WriteCXXSource)
 
 project(numeric)
 
@@ -92,7 +93,7 @@ endif()
 ### OpenMP ###
 
 if(OPENMP_ENABLED)
-	message("-- OpenMP enabled")
+	message(STATUS "OpenMP enabled")
 	# Add OpenMP
 	find_package(OpenMP)
 	if(NOT OpenMP_FOUND)
@@ -100,36 +101,27 @@ if(OPENMP_ENABLED)
 			message(FATAL_ERROR "OpenMP could not be located")
 		else()
 			# Mac is notoriously difficult: try to find Homebrew OpenMP semi-manually
-			message("-- Will try to find Homebrew OpenMP")
+			message(STATUS "Will try to find Homebrew OpenMP")
 			include(findHomebrewOpenMP)
 			findHomebrewOpenMP()
 		endif()
 	endif()
 
-	# FIXME
-	#set(OpenMP_C_FLAGS   "${OpenMP_C_FLAGS}   -fopenmp-simd")
-	#set(OpenMP_CXX_FLAGS "${OpenMP_CXX_FLAGS} -fopenmp-simd")
-	#set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fopenmp-simd")
-	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp-simd")
-	#set(OpenMP_C_FLAGS   "-fopenmp -fopenmp-simd")
-	#set(OpenMP_CXX_FLAGS "-fopenmp -fopenmp-simd")
-	#message("OpenMP_C_FLAGS   = ${OpenMP_C_FLAGS}")
-	#message("OpenMP_CXX_FLAGS = ${OpenMP_CXX_FLAGS}" )
-
+	# TODO: compiler-dependent option?
 	target_compile_options(OpenMP::OpenMP_CXX INTERFACE "-fopenmp-simd")
+endif()
 
-	# Only set a linker flag if the user didn't set them manually
-	if(NOT DEFINED OpenMP_LINKER_FLAGS)
-			set(OpenMP_LINKER_FLAGS "${OpenMP_CXX_FLAGS}")
-	endif()
-	if(NOT DEFINED OpenMP_SHARED_LINKER_FLAGS)
-			set(OpenMP_SHARED_LINKER_FLAGS "${OpenMP_CXX_FLAGS}")
-	endif()
+# Find a restrict keyword for C++ (compiler-dependent)
+include(FindCXXRestrict)
+if(HAVE_CXX_RESTRICT)
+	string(REPLACE "=" ";" FLAG_LIST ${CXX_RESTRICT_FLAG})
+	list(GET FLAG_LIST 1 CXX_RESTRICT_FLAG_NAME)
+
+	message(STATUS "Found restrict keyword for C++ - ${CXX_RESTRICT_FLAG_NAME} (${CXX_RESTRICT_FLAG})")
+	message(STATUS "  Will replace the macro - ${CXX_RESTRICT_MACRO}")
 else()
-	# Unset all OpenMP flags in case OpenMP was disabled either by the user
-	# or because it was only partially detected (e.g. only for C but not C++ compiler)
-	unset(OpenMP_C_FLAGS CACHE)
-	unset(OpenMP_CXX_FLAGS CACHE)
+	message(STATUS "Could not find a restrict keyword equivalent for C++")
+	set(CXX_RESTRICT_FLAG "-D${CXX_RESTRICT_MACRO}=")
 endif()
 
 
@@ -139,6 +131,7 @@ endif()
 
 # Basic flags
 add_compile_options(-g -Wall)
+add_definitions(${CXX_RESTRICT_FLAG})
 #target_compile_options(${PROJECT_NAME} PUBLIC -g -Wall)
 
 # Optimizations

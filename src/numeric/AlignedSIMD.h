@@ -12,7 +12,20 @@
 
 #include "Aligned.h"
 
+// Look for a valid restrict keyword.
+// Make sure to undef it before leaving file scope.
+#ifndef CXX_RESTRICT
+#  define ALIGNED_SIMD_RESTRICT
+#  define CXX_RESTRICT ""
+#endif
+
 #include "simd/Real.h"
 #include "simd/Complex.h"
+
+// Undefine local macros
+#ifdef ALIGNED_SIMD_RESTRICT
+#  undef ALIGNED_SIMD_RESTRICT
+#  undef CXX_RESTRICT
+#endif
 
 #endif // define ALIGNED_SIMD_H

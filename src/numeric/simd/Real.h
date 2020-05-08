@@ -16,11 +16,12 @@ namespace real {     // real arrays
 //  ... or allow the compiler to figure it out
 static constexpr int SIMD_LEN = 4;
 
+
 //----- Vector Inputs -----//
 
 // output = x <op> y
 template<typename T> inline
-void add(const T* x, const T* y, const int size, T* output)
+void add(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, y, output: CACHE_LINE_SIZE) //simdlen(SIMD_LEN)
 	for ( int i=0; i<size; ++i ) {
@@ -29,7 +30,7 @@ void add(const T* x, const T* y, const int size, T* output)
 }
 
 template<typename T> inline
-void subtract(const T* x, const T* y, const int size, T* output)
+void subtract(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, y, output: CACHE_LINE_SIZE) //simdlen(SIMD_LEN)
 	for ( int i=0; i<size; ++i ) {
@@ -38,7 +39,7 @@ void subtract(const T* x, const T* y, const int size, T* output)
 }
 
 template<typename T> inline
-void multiply(const T* x, const T* y, const int size, T* output)
+void multiply(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, y, output: CACHE_LINE_SIZE) //simdlen(SIMD_LEN)
 	for ( int i=0; i<size; ++i ) {
@@ -47,7 +48,7 @@ void multiply(const T* x, const T* y, const int size, T* output)
 }
 
 template<typename T> inline
-void divide(const T* x, const T* y, const int size, T* output)
+void divide(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, y, output: CACHE_LINE_SIZE) //simdlen(SIMD_LEN)
 	for ( int i=0; i<size; ++i ) {
@@ -61,7 +62,7 @@ void divide(const T* x, const T* y, const int size, T* output)
 // output = x <op> a
 
 template<typename T> inline
-void add(const T* x, const T a, const int size, T* output)
+void add(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, output: CACHE_LINE_SIZE) //simdlen(SIMD_LEN)
 	for ( int i=0; i<size; ++i ) {
@@ -70,7 +71,7 @@ void add(const T* x, const T a, const int size, T* output)
 }
 
 template<typename T> inline
-void subtract(const T* x, const T a, const int size, T* output)
+void subtract(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRICT output)
 {
 	add(x, -a, size, output);
 }
@@ -107,7 +108,7 @@ void axpy(const T a, const T* x, const T* y, const int size, T* output)
 template<typename T> inline
 void axpby(const T a, const T* x, const T b, const T* y, const int size, T* output)
 {
-	#pragma omp simd aligned(x, y, output: CACHE_LINE_SIZE) simdlen(SIMD_LEN)
+	#pragma omp simd aligned(x, y, output: CACHE_LINE_SIZE) //simdlen(SIMD_LEN)
 	for ( int i=0; i<size; ++i ) {
 		output[i] = a*x[i] + b*y[i];
 	}
