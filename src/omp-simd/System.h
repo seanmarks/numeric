@@ -1,5 +1,6 @@
 // System - functions and static wrappers for querying system info
 
+#pragma once
 #ifndef SYSTEM_H
 #define SYSTEM_H
 

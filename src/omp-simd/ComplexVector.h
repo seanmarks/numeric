@@ -27,6 +27,7 @@ template<
 class ComplexVector
 {
  public:
+	// TODO: Remove?
 	template<typename U, std::size_t N, template<typename,typename> class VectorU, template<typename> class AllocU>
 	friend class VectorComplexN;
 
@@ -64,6 +65,29 @@ class ComplexVector
 	Complex<U> operator[](const unsigned i) const {
 		return (*this)(i);  // use operator() to avoid duplication
 	}
+
+
+	// TODO Allow setting by reference
+	template<typename U = T>
+	class ElementRef {
+	 public:
+		ElementRef(const int i, ComplexVectorType& v):
+			real_(v.real_[i]), imag_(v.imag_[i]) 
+		{}
+
+		// TODO Conversion to Complex
+		template<typename V>
+		ElementRef& operator=(const Complex<V>& value) {
+			real_ = value.real();
+			imag_ = value.imag();
+			return *this;
+		}
+	 private:
+		U& real_;
+		U& imag_;
+	};
+
+	//ElementRef<T> operator()
 
 	// Sets the 'i'th entry to 'value'
 	template<typename U>

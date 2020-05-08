@@ -4,11 +4,11 @@
 #include <iostream>
 #include <vector>
 
-#include "Aligned.h"
-#include "CommonTypes.h"
-#include "ComplexVector.h"
-#include "Timer.h"
-#include "VectorComplexN.h"
+#include "omp-simd/Aligned.h"
+#include "omp-simd/CommonTypes.h"
+#include "omp-simd/ComplexVector.h"
+#include "omp-simd/Timer.h"
+#include "omp-simd/VectorComplexN.h"
 
 
 void comparePerformance(std::string header, const double rmsd, const Timer& timer_old, const Timer& timer_new)
@@ -35,16 +35,21 @@ void comparePerformance(std::string header, const double rmsd, const Timer& time
 	          << std::endl;
 }
 
-template<typename T> using Complex = std::complex<T>;
-template<typename T> using Alloc   = Aligned::CacheAlignedAllocator<T>;
-template<typename T> using Vector  = std::vector<T, Alloc<T>>;
+// Cache-aligned vector
+template<typename T>
+using Alloc  = Aligned::CacheAlignedAllocator<T>;
+template<typename T>
+using Vector = std::vector<T, Alloc<T>>;
 
-template<typename T> using ComplexVector = Aligned::ComplexVector<T,std::vector,Alloc>;
-template<typename T, std::size_t N> using VectorComplexN = Aligned::VectorComplexN<T,N,std::vector,Alloc>;
+// Custom complex vector types
+template<typename T> 
+using ComplexVector = Aligned::ComplexVector<T,std::vector,Alloc>;
+template<typename T, std::size_t N> 
+using VectorComplexN = Aligned::VectorComplexN<T,N,std::vector,Alloc>;
 
+// Standard types
 template<typename T>
 using Complex = std::complex<T>;
-
 template <typename T>
 using StdComplexVector = std::vector<Complex<T>>;
 //using StdComplexVector = CommonTypes::AlignedVector<std::complex<T>>;

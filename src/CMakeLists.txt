@@ -1,11 +1,7 @@
-### LIB_NUMERIC ###
-
-# This directory contains the core src files
+# Each subdirectory builds a library
 add_subdirectory(numeric)
-install(TARGETS ${LIB_NUMERIC} DESTINATION lib)
-
 add_subdirectory(omp-simd)
-install(TARGETS ${LIB_OMP_SIMD} DESTINATION lib)
+
 
 ### Driver ###
 

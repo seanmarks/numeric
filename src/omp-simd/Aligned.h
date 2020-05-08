@@ -15,6 +15,8 @@
 // - Misc. notes
 //   - 'construct()' and 'destruct()' are not implemented, as they are redundant in C++11
 //
+
+#pragma once
 #ifndef ALIGNED_H
 #define ALIGNED_H
 

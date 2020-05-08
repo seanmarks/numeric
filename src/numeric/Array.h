@@ -162,8 +162,8 @@ class Array
 
 	//----- Output/Debugging -----//
 
-	template<typename U, std::size_t M>
-	friend std::ostream& operator<<(std::ostream& os, const Array<U,M>& array);
+	//template<typename U, std::size_t M>
+	//friend std::ostream& operator<<(std::ostream& os, const Array<U,M>& array);
 
  private:
 	T data_[N];
