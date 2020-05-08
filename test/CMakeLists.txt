@@ -33,6 +33,8 @@ set(TEST_BIN_ROOT ${CMAKE_BINARY_DIR}/test/bin)
 
 set(NUMERIC_TEST_NAMES "")
 list(APPEND NUMERIC_TEST_NAMES "basic")
+list(APPEND NUMERIC_TEST_NAMES "omp-simd/real")
+list(APPEND NUMERIC_TEST_NAMES "omp-simd/complex")
 
 foreach(TEST_NAME IN LISTS NUMERIC_TEST_NAMES)
 	# TODO: move to function: build test driver with custom 'main' (link to library)
@@ -62,7 +64,7 @@ endforeach()
 
 
 set(OMP_SIMD_TEST_NAMES "")
-list(APPEND OMP_SIMD_TEST_NAMES "omp-simd/real")
+list(APPEND OMP_SIMD_TEST_NAMES "old-omp-simd")
 
 foreach(TEST_NAME IN LISTS OMP_SIMD_TEST_NAMES)
 	# TODO: move to function: build test driver with custom 'main' (link to library)
