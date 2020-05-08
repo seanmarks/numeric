@@ -37,8 +37,10 @@ set(GPTL_DIR "${HOME}/programs/gptl" CACHE STRING "Location of GPTL installation
 option(OPENMP_ENABLED "Enable OpenMP" OFF)
 
 # Output names
-set(LIB_NUMERIC    "libop"          CACHE STRING "Name of the library to be created")
-set(NUMERIC_DRIVER "${PROJECT_NAME}" CACHE STRING "Name of the executable")
+set(LIB_NUMERIC    "libnumeric"      CACHE STRING "Name of the library to be created")
+set(LIB_OMP_SIMD   "libompsimd"      CACHE STRING "Name of the library to be created")
+
+#set(NUMERIC_DRIVER "${PROJECT_NAME}" CACHE STRING "Name of the executable")
 
 
 #################
@@ -104,6 +106,18 @@ if(OPENMP_ENABLED)
 		endif()
 	endif()
 
+	# FIXME
+	#set(OpenMP_C_FLAGS   "${OpenMP_C_FLAGS}   -fopenmp-simd")
+	#set(OpenMP_CXX_FLAGS "${OpenMP_CXX_FLAGS} -fopenmp-simd")
+	#set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fopenmp-simd")
+	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp-simd")
+	#set(OpenMP_C_FLAGS   "-fopenmp -fopenmp-simd")
+	#set(OpenMP_CXX_FLAGS "-fopenmp -fopenmp-simd")
+	#message("OpenMP_C_FLAGS   = ${OpenMP_C_FLAGS}")
+	#message("OpenMP_CXX_FLAGS = ${OpenMP_CXX_FLAGS}" )
+
+	target_compile_options(OpenMP::OpenMP_CXX INTERFACE "-fopenmp-simd")
+
 	# Only set a linker flag if the user didn't set them manually
 	if(NOT DEFINED OpenMP_LINKER_FLAGS)
 			set(OpenMP_LINKER_FLAGS "${OpenMP_CXX_FLAGS}")
@@ -144,7 +158,7 @@ add_compile_options("$<$<CONFIG:RELEASE>:${NUMERIC_OPT_RELEASE_FLAGS}>")
 ### Build ###
 #############
 
-add_definitions(-DNUMERIC_STANDALONE_MODE)
+#add_definitions(-DNUMERIC_STANDALONE_MODE)
 add_subdirectory(src)
 
 
