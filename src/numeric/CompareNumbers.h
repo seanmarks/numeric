@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 
 namespace numeric {
 
@@ -36,12 +37,25 @@ union Float_t
 */
 
 
-class Float_t
+// Type traits struct with a signed Int type of the same size (in bytes)
+// as floating-point type T
+template<typename T>
+struct FloatingPointNumberTraits;
+
+
+// Stores different representations (TODO: and dissections) of a given floating-point number
+template<typename T>
+class FloatingPointNumber
 {
  public:
-	using Int = std::int32_t;
+	using Traits = FloatingPointNumberTraits<T>;
+	using Int    = typename Traits::Int;
 
-	Float_t(const float value = 0.0f):
+	static_assert(std::is_floating_point<T>::value, "floating-point type required");
+	static_assert(std::is_integral<Int>::value,     "integral type required");
+	// TODO require (sizeof(T) == sizeof(Int)) and Int be signed
+
+	FloatingPointNumber(const T value = 0.0):
 		value_(value),
 		integer_rep_( *reinterpret_cast<Int*>(&value_) )
 	{}
@@ -55,57 +69,137 @@ class Float_t
 	}
 
  private:
-	float value_;
-	Int   integer_rep_;
+	T   value_;
+	Int integer_rep_;
 };
 
 
-// TODO: default max_diff calibration
+template<>
+struct FloatingPointNumberTraits<float>
+{
+	using Int = std::int32_t;
+};
+
+template<>
+struct FloatingPointNumberTraits<double>
+{
+	using Int = std::int64_t;
+};
+
+using Float_t  = FloatingPointNumber<float>;
+using Double_t = FloatingPointNumber<double>;
+
+
+template<typename T>
+class AlmostEqualUlps
+{
+ public:
+	using Traits = FloatingPointNumberTraits<T>;
+	using Int    = typename Traits::Int;
+
+	static_assert(std::is_floating_point<T>::value, "floating-point type required");
+	static_assert(std::is_integral<Int>::value,     "integral type required");
+
+	// TODO calibrate default max_diff
+	AlmostEqualUlps(
+		const T   max_diff      = std::numeric_limits<T>::epsilon(),
+		const Int max_ulps_diff = 4
+	):
+		max_diff_(max_diff), max_ulps_diff_(max_ulps_diff)
+	{}
+
+	bool operator()(const T& a, const T& b) {
+		return are_almost_equal(a, b);
+	}
+
+	bool are_almost_equal(const T& a, const T& b) {
+		// Check if the numbers are really close -- needed when comparing numbers near zero.
+		T abs_diff = std::fabs(a - b);
+		if (abs_diff <= max_diff_) {
+			return true;
+		}
+
+		FloatingPointNumber<T> rep_a(a), rep_b(b);
+
+		// Different signs means they do not match.
+		if (rep_a.is_negative() != rep_b.is_negative()) {
+			return false;
+		}
+
+		// Find the difference in ULPs.
+		Int ulps_diff = std::abs(rep_a.integer_rep() - rep_b.integer_rep());
+		if (ulps_diff <= max_ulps_diff_) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+ private:
+	T   max_diff_;
+	Int max_ulps_diff_;
+};
+
+
+
+/*
+// TODO: calibrate default max_diff for numbers near zero
+// - Use sqrt(std::numeric_limits<T>::epsilon()) ?
+template<typename T>  //, typename FloatingPointNumber<T>::Int>
 bool almost_equal_ulps(
-	float a, float b, float max_diff = 1.0e-5, int max_ulps_diff = 4
+	T a, T b, T max_diff = 1.0e-9, typename FloatingPointNumber<T>::Int max_ulps_diff = 4
 )
 {
 	// Check if the numbers are really close -- needed
 	// when comparing numbers near zero.
-	float abs_diff = std::fabs(a - b);
+	T abs_diff = std::fabs(a - b);
 	if (abs_diff <= max_diff) {
 		return true;
 	}
 
-	Float_t ua(a);
-	Float_t ub(b);
+	FloatingPointNumber<T> rep_a(a);
+	FloatingPointNumber<T> rep_b(b);
 
 	// Different signs means they do not match.
-	if (ua.is_negative() != ub.is_negative()) {
+	if (rep_a.is_negative() != rep_b.is_negative()) {
 		return false;
 	}
 
 	// Find the difference in ULPs.
-	int ulps_diff = std::abs(ua.integer_rep() - ub.integer_rep());
+	using Int = typename FloatingPointNumber<T>::Int;
+	Int ulps_diff = std::abs(rep_a.integer_rep() - rep_b.integer_rep());
 	if (ulps_diff <= max_ulps_diff) {
+
+		// FIXME DEBUG
+		std::cout << "ALMOST EQUAL: " << a << ", " << b << std::endl;
+		std::cout << "  ulps_dif = " << ulps_diff << ", max_ulps_diff = " << max_ulps_diff << std::endl;
+
 		return true;
 	}
 	else {
 		return false;
 	}
 }
+*/
 
 
-// TODO: default max_diff calibration
+// TODO: calibrate default max_diff
+template<typename T>
 bool almost_equal(
-	float a, float b, float max_diff = 1.0e-5, float max_rel_diff = std::numeric_limits<float>::epsilon()
+	T a, T b, T max_diff = 1.0e-5, T max_rel_diff = std::numeric_limits<T>::epsilon()
 )
 {
 	// Check if the numbers are really close -- needed
 	// when comparing numbers near zero.
-	float diff = std::fabs(a - b);
+	T diff = std::fabs(a - b);
 	if (diff <= max_diff) {
 		return true;
 	}
 
 	a = std::fabs(a);
 	b = std::fabs(b);
-	float largest = (b > a) ? b : a;
+	T largest = (b > a) ? b : a;
 
 	if (diff <= largest * max_rel_diff) {
 		return true;
@@ -115,4 +209,4 @@ bool almost_equal(
 	}
 }
 
-}
+} // end namespace numeric
