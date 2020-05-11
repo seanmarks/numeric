@@ -10,6 +10,7 @@ int main(int argc, char* argv[])
 	using Real    = double;
 	using Complex = std::complex<Real>;
 
+	using namespace numeric;
 	using AlignedVector = std::vector<Real, AlignedAlloc<Real>>;
 	using ComplexVector = aligned::ComplexVector<Real>;
 

@@ -7,6 +7,8 @@ int main(int argc, char* argv[])
 	//-----------------//
 
 	using Real = double;
+
+	using namespace numeric;
 	using AlignedVector = std::vector<Real, AlignedAlloc<Real>>;
 
 	// Convert 'argv'

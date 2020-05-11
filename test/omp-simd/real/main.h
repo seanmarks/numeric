@@ -38,7 +38,7 @@ void comparePerformance(std::string header, const double rmsd, const Timer& time
 
 // Cache-aligned vector
 template<typename T>
-using AlignedAlloc  = aligned::CacheAlignedAllocator<T>;
+using AlignedAlloc = numeric::aligned::CacheAlignedAllocator<T>;
 
 
 template<typename V, typename W>

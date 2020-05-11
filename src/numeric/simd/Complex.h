@@ -14,8 +14,10 @@
 #  define ALIGNED_SIMD_LEN 16
 #endif
 
+namespace numeric {
 namespace aligned {
 namespace simd    {
+
 namespace complex {
 
 // TODO
@@ -101,5 +103,6 @@ void divide(const T* re_x, const T* im_x, const T re_a, const T im_a,
 
 } // end namespace simd
 } // end namespace aligned
+} // end namespace numeric
 
 #endif // define ALIGNED_SIMD_H

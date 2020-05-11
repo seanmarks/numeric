@@ -46,6 +46,7 @@
 
 #include "System.h"
 
+namespace numeric {
 namespace aligned {
 
 using size_type = std::size_t;
@@ -193,6 +194,7 @@ class Allocator {
 template<typename T>
 using CacheAlignedAllocator = Allocator<T>;
 
-
 } // end namespace aligned
+} // end namespace numeric
+
 #endif // ifndef ALIGNED_ALLOCATOR_H

@@ -21,6 +21,7 @@
 
 #include "Aligned.h"
 
+namespace numeric {
 namespace aligned {
 
 template<typename T>
@@ -184,5 +185,6 @@ std::ostream& operator<<(std::ostream& os, const ComplexVector<T,AlignedVector>&
 }
 
 } // end namespace aligned
+} // end namespace numeric
 
 #endif // ifndef COMPLEX_VECTOR_H

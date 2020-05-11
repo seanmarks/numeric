@@ -1,6 +1,7 @@
 /* Main header for including SIMD kernels and helper functions
+ * - !!! See Aligned.h !!! about using these functions safely and correctly
  * - Uses OpenMP SIMD
- * - Functions generally assume cache-aligned data
+ * - Functions assume cache-aligned data
  */
 
 #pragma once
@@ -12,8 +13,9 @@
 
 #include "Aligned.h"
 
-// Look for a valid restrict keyword.
-// Make sure to undef it before leaving file scope.
+// Look for a valid restrict keyword
+// - If it's not available, use a dummy
+// - Make sure to undef it before leaving file scope.
 #ifndef CXX_RESTRICT
 #  define ALIGNED_SIMD_RESTRICT
 #  define CXX_RESTRICT ""
