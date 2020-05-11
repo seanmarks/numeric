@@ -8,7 +8,9 @@
 #include <iostream>
 #include <vector>
 
+#include "numeric/Assert.h"
 #include "numeric/Aligned.h"
+#include "numeric/CompareNumbers.h"
 #include "numeric/Timer.h"
 
 void comparePerformance(std::string header, const double rmsd, const Timer& timer_old, const Timer& timer_new)

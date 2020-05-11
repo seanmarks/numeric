@@ -51,7 +51,6 @@ int main(int argc, char* argv[])
 	
 	timer_std.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		#pragma omp simd
 		for ( int i=0; i<len; ++i ) {
 			output_std[i] = a_std[i] + b_std[i];
 		}
@@ -63,6 +62,12 @@ int main(int argc, char* argv[])
 		aligned::simd::real::add(a_new.data(), b_new.data(), len, output_new.data());
 	}
 	timer_new.stop();
+
+	// FIXME DEBUG
+	AlmostEqualUlps<Real> almost_equal;
+	for ( int i=0; i<len; ++i ) {
+		FANCY_ASSERT( almost_equal(output_new[i], output_std[i]), "EXCESSIVE ERROR" );
+	}
 
 	comparePerformance(header, rmsd(output_std, output_new), timer_std, timer_new);
 

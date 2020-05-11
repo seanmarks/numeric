@@ -13,29 +13,6 @@
 
 namespace numeric {
 
-/*
-// Original
-union Float_t
-{
-	Float_t(float num = 0.0f) : f(num) {}
-	// Portable extraction of components.
-	bool    is_negative()  const { return (i >> 31) != 0;      }
-	int32_t raw_mantissa() const { return i & ((1 << 23) - 1); }
-	int32_t raw_exponent() const { return (i >> 23) & 0xFF;    }
-
-	int32_t i;
-	float f;
-#ifdef _DEBUG
-	struct
-	{   // Bitfields for exploration. Do not use in production code.
-		uint32_t mantissa : 23;
-		uint32_t exponent : 8;
-		uint32_t sign : 1;
-	} parts;
-#endif
-};
-*/
-
 
 // Type traits struct with a signed Int type of the same size (in bytes)
 // as floating-point type T
@@ -43,7 +20,8 @@ template<typename T>
 struct FloatingPointNumberTraits;
 
 
-// Stores different representations (TODO: and dissections) of a given floating-point number
+// Stores different representations a given floating-point number
+// - TODO: Store a dissection of the number (e.g. sign, mantissa, exponent)
 template<typename T>
 class FloatingPointNumber
 {
@@ -61,7 +39,7 @@ class FloatingPointNumber
 	{}
 
 	bool is_negative() const {
-		// TODO: portable sign bit check?
+		// TODO: sign bit check?
 		return value_ < 0.0;
 	}  
 	Int integer_rep() const {
@@ -102,7 +80,7 @@ class AlmostEqualUlps
 
 	// TODO calibrate default max_diff
 	AlmostEqualUlps(
-		const T   max_diff      = std::numeric_limits<T>::epsilon(),
+		const T   max_diff      = /*std::sqrt(*/ std::numeric_limits<T>::epsilon() /*)*/,
 		const Int max_ulps_diff = 4
 	):
 		max_diff_(max_diff), max_ulps_diff_(max_ulps_diff)
@@ -208,5 +186,29 @@ bool almost_equal(
 		return false;
 	}
 }
+
+
+/*
+// Original
+union Float_t
+{
+	Float_t(float num = 0.0f) : f(num) {}
+	// Portable extraction of components.
+	bool    is_negative()  const { return (i >> 31) != 0;      }
+	int32_t raw_mantissa() const { return i & ((1 << 23) - 1); }
+	int32_t raw_exponent() const { return (i >> 23) & 0xFF;    }
+
+	int32_t i;
+	float f;
+#ifdef _DEBUG
+	struct
+	{   // Bitfields for exploration. Do not use in production code.
+		uint32_t mantissa : 23;
+		uint32_t exponent : 8;
+		uint32_t sign : 1;
+	} parts;
+#endif
+};
+*/
 
 } // end namespace numeric

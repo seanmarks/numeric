@@ -24,6 +24,10 @@ set(ROOT_TEST_DIR ${CMAKE_CURRENT_LIST_DIR})
 ### Tests ###
 #############
 
+# Dummy target: use to force CMake to build testing binaries
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+
+
 ### Builtin Tests ###
 
 # Root directory where testing binaries will be built
@@ -37,7 +41,7 @@ list(APPEND NUMERIC_TEST_NAMES "omp-simd/real")
 list(APPEND NUMERIC_TEST_NAMES "omp-simd/complex")
 
 foreach(TEST_NAME IN LISTS NUMERIC_TEST_NAMES)
-	# TODO: move to function: build test driver with custom 'main' (link to library)
+	# TODO: move to function?
 
 	# To ensure that each binary has a different name, they are generated from the
 	# corresponding subdirectory name
@@ -55,6 +59,8 @@ foreach(TEST_NAME IN LISTS NUMERIC_TEST_NAMES)
 												)
 	target_link_libraries(${TEST_PROGRAM} PUBLIC ${LIB_NUMERIC})
 	target_include_directories(${TEST_PROGRAM} PUBLIC ${CMAKE_SOURCE_DIR}/src)
+
+	add_dependencies(check ${TEST_PROGRAM})
 
 	# Generate the test
 	add_test(NAME ${TEST_NAME}
