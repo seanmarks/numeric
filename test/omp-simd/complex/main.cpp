@@ -48,21 +48,27 @@ int main(int argc, char* argv[])
 	//-----  Addition -----//
 
 	ComplexVector a_new(10, 3.0);
-	std::cout << a_new;
+	std::cout << a_new << std::endl;
 
 	a_new.fill(5.0);
-	std::cout << a_new;
+	std::cout << a_new << std::endl;
 
 	a_new.fill(Complex{{1.0, -1.0}});
-	std::cout << a_new;
+	std::cout << a_new << std::endl;
 
 	a_new.resize(15);
 	std::cout << a_new;
-	std::cout << "size = " << a_new.size() << "\n";
+	std::cout << "size = " << a_new.size() << std::endl;
 
 	a_new.real(2) = 1.5;
 	a_new.imag(4) = 7.0;
-	std::cout << a_new;
+	std::cout << a_new << std::endl;
+
+	a_new(5) = Complex{{20.0, 30.0}};
+	std::cout << a_new << std::endl;
+
+	Complex a_5 = a_new[5];
+	std::cout << a_5 << std::endl;
 
 	/*
 	std::vector<Real> a_std(len, 4), b_std(len, 3), output_std(len, 1.0);

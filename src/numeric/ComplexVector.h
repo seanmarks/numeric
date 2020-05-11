@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <complex>
 #include <exception>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -102,7 +103,7 @@ class ComplexVector
 		data_.reserve(2*size);
 	}
 
-	//
+	// Set size and contents
 	void assign(const size_type size, const Complex& value) {
 		resize(size);
 		unsigned len = data_.size();
@@ -142,17 +143,53 @@ class ComplexVector
 		one();
 	}
 
-	// Copy value
-	Complex operator()(const size_type i) const {
-		unsigned k = 2*i;
-		return {{ data_[k], data_[k+1] }};
-	}
 
 	// Access real/imag components of elements
 	T&       real(const size_type i)       { return data_[2*i];   }
 	T&       imag(const size_type i)       { return data_[2*i+1]; }
 	const T& real(const size_type i) const { return data_[2*i];   }
 	const T& imag(const size_type i) const { return data_[2*i+1]; }
+
+	// Object that represents a reference to the 'i'th element of
+	// a ComplexVector, in the sense of 'vec[i]'
+	// - TODO: Rebinding/copying?
+	class ElementRef {
+	 public:
+		ElementRef(ComplexVector& vec, const size_type i):
+			vec_(vec), real_(vec.real(i)), imag_(vec.imag(i)) {}
+
+		// Change the parent ComplexVector
+		ElementRef& operator=(const Complex& value) {
+			real_.get() = value.real();
+			imag_.get() = value.imag();
+			return *this;
+		}
+
+		// Convert to Complex
+		operator Complex() const {
+			return Complex(real_, imag_);
+		}
+
+	 private:
+		std::reference_wrapper<ComplexVector> vec_;
+		std::reference_wrapper<T>             real_, imag_;
+	};
+
+	// Element access
+	// - By reference (mutable): allows assignment via 'vec[i] = ' ...
+	ElementRef operator()(const size_type i) {
+		return ElementRef(*this, i);
+	}
+	ElementRef operator[](const size_type i) {
+		return (*this)(i);
+	}
+	// - By value
+	Complex operator()(const size_type i) const {
+		return {{ real(i), imag(i) }};
+	}
+	Complex operator[](const size_type i) const {
+		return (*this)(i);
+	}
 
 	// Output
 	template<typename U, typename V>

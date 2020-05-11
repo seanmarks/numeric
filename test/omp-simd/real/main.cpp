@@ -63,12 +63,7 @@ int main(int argc, char* argv[])
 	}
 	timer_new.stop();
 
-	// FIXME DEBUG
-	AlmostEqualUlps<Real> almost_equal;
-	for ( int i=0; i<len; ++i ) {
-		FANCY_ASSERT( almost_equal(output_new[i], output_std[i]), "EXCESSIVE ERROR" );
-	}
-
+	check(output_new, output_std);
 	comparePerformance(header, rmsd(output_std, output_new), timer_std, timer_new);
 
 	return 0;

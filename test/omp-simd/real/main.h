@@ -44,7 +44,7 @@ using AlignedAlloc = numeric::aligned::CacheAlignedAllocator<T>;
 
 
 template<typename V, typename W>
-double rmsd(const V& std_vec, const W& new_vec)
+double rmsd(const V& new_vec, const W& std_vec)
 {
 	double sum = 0.0;
 	unsigned length = std_vec.size();
@@ -56,5 +56,20 @@ double rmsd(const V& std_vec, const W& new_vec)
 	}
 	return sqrt( sum/static_cast<double>(length) );
 }
+
+
+template<typename V, typename W>
+void check(const V& new_vec, const W& std_vec)
+{
+	unsigned length = std_vec.size();
+	FANCY_ASSERT( length == new_vec.size(), "length mismatch" );
+
+	numeric::AlmostEqualUlps<typename V::value_type> almost_equal_ulps;
+	for ( unsigned i=0; i<length; ++i ) {
+		FANCY_ASSERT( almost_equal_ulps(new_vec[i], std_vec[i]),
+		              "numbers should be close in double-ULPs (delta = " << new_vec[i] - std_vec[i] << ")" );
+	}
+}
+
 
 #endif // ifndef MAIN_H

@@ -120,48 +120,6 @@ class AlmostEqualUlps
 };
 
 
-
-/*
-// TODO: calibrate default max_diff for numbers near zero
-// - Use sqrt(std::numeric_limits<T>::epsilon()) ?
-template<typename T>  //, typename FloatingPointNumber<T>::Int>
-bool almost_equal_ulps(
-	T a, T b, T max_diff = 1.0e-9, typename FloatingPointNumber<T>::Int max_ulps_diff = 4
-)
-{
-	// Check if the numbers are really close -- needed
-	// when comparing numbers near zero.
-	T abs_diff = std::fabs(a - b);
-	if (abs_diff <= max_diff) {
-		return true;
-	}
-
-	FloatingPointNumber<T> rep_a(a);
-	FloatingPointNumber<T> rep_b(b);
-
-	// Different signs means they do not match.
-	if (rep_a.is_negative() != rep_b.is_negative()) {
-		return false;
-	}
-
-	// Find the difference in ULPs.
-	using Int = typename FloatingPointNumber<T>::Int;
-	Int ulps_diff = std::abs(rep_a.integer_rep() - rep_b.integer_rep());
-	if (ulps_diff <= max_ulps_diff) {
-
-		// FIXME DEBUG
-		std::cout << "ALMOST EQUAL: " << a << ", " << b << std::endl;
-		std::cout << "  ulps_dif = " << ulps_diff << ", max_ulps_diff = " << max_ulps_diff << std::endl;
-
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-*/
-
-
 // TODO: calibrate default max_diff
 template<typename T>
 bool almost_equal(
