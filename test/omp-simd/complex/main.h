@@ -11,6 +11,7 @@
 #include "numeric/Aligned.h"
 #include "numeric/Assert.h"
 #include "numeric/CompareNumbers.h"
+#include "numeric/ComplexVector.h"
 #include "numeric/Timer.h"
 
 void comparePerformance(std::string header, const double rmsd, const Timer& timer_old, const Timer& timer_new)
@@ -38,10 +39,8 @@ void comparePerformance(std::string header, const double rmsd, const Timer& time
 }
 
 
-// Cache-aligned vector
-template<typename T>
-using AlignedAlloc = numeric::aligned::CacheAlignedAllocator<T>;
 
+/*
 // TODO update
 template<typename V, typename W>
 double rmsd(const V& std_vec, const W& new_vec)
@@ -56,18 +55,25 @@ double rmsd(const V& std_vec, const W& new_vec)
 	}
 	return sqrt( sum/static_cast<double>(length) );
 }
+*/
 
 // TODO update
-template<typename V, typename W>
-void check(const V& std_vec, const W& new_vec)
+//template<typename V, typename W>
+template<typename T>
+void check(
+	const numeric::aligned::ComplexVector<T>& new_vec,
+	const std::vector<std::complex<T>>&       std_vec
+)
 {
 	unsigned length = std_vec.size();
 	FANCY_ASSERT( length == new_vec.size(), "length mismatch" );
 
-	numeric::AlmostEqualUlps<typename V::value_type> almost_equal_ulps;
+	numeric::AlmostEqualUlps<T> almost_equal_ulps;
 	for ( unsigned i=0; i<length; ++i ) {
-		FANCY_ASSERT( almost_equal_ulps_d(new_vec[i], std_vec[i]),
-		              "numbers should be close in double-ULPs (delta = " << new_vec[i] - std_vec[i] << ")" );
+		FANCY_ASSERT( almost_equal_ulps_d(new_vec[i].real(), std_vec[i].real()),
+		              "numbers should be close in double-ULPs (delta = " << new_vec[i].real() - std_vec[i].real() << ")" );
+		FANCY_ASSERT( almost_equal_ulps_d(new_vec[i].imag(), std_vec[i].imag()),
+		              "numbers should be close in double-ULPs (delta = " << new_vec[i].imag() - std_vec[i].imag() << ")" );
 	}
 }
 

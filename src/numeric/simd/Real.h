@@ -22,7 +22,7 @@ namespace real {     // real arrays
 //----- Vector Inputs -----//
 //-------------------------//
 
-// output = x <op> y
+// output = x + y
 template<typename T> inline
 void add(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
 {
@@ -32,6 +32,7 @@ void add(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CX
 	}
 }
 
+// output = x - y
 template<typename T> inline
 void subtract(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
 {
@@ -41,6 +42,7 @@ void subtract(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, 
 	}
 }
 
+// output = x * y (element-wise)
 template<typename T> inline
 void multiply(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
 {
@@ -50,6 +52,7 @@ void multiply(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, 
 	}
 }
 
+// output = x / y (element-wise)
 template<typename T> inline
 void divide(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
 {
@@ -59,11 +62,9 @@ void divide(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T*
 	}
 }
 
-
-// In-place:  output <op>= x
-
+// output += x
 template<typename T> inline
-void add_inplace(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output)
+void add_in_place(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, output: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
@@ -71,8 +72,9 @@ void add_inplace(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output
 	}
 }
 
+// output -= x
 template<typename T> inline
-void subtract_inplace(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output)
+void subtract_in_place(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, output: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
@@ -80,8 +82,9 @@ void subtract_inplace(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT o
 	}
 }
 
+// output *= x  (element-wise)
 template<typename T> inline
-void multiply_inplace(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output)
+void multiply_in_place(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, output: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
@@ -89,8 +92,9 @@ void multiply_inplace(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT o
 	}
 }
 
+// output *= x  (element-wise)
 template<typename T> inline
-void divide_inplace(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output)
+void divide_in_place(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, output: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
@@ -103,8 +107,7 @@ void divide_inplace(const T* CXX_RESTRICT x, const int size, T* CXX_RESTRICT out
 //----- Vector and Scalar -----//
 //-----------------------------//
 
-// output = x <op> a
-
+// output = x + a
 template<typename T> inline
 void add(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRICT output)
 {
@@ -114,6 +117,7 @@ void add(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRICT out
 	}
 }
 
+// output = x - a
 template<typename T> inline
 void subtract(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRICT output)
 {
@@ -123,6 +127,7 @@ void subtract(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRIC
 	}
 }
 
+// output = a*x
 template<typename T> inline
 void multiply(const T* x, const T a, const int size, T* output)
 {
@@ -132,17 +137,16 @@ void multiply(const T* x, const T a, const int size, T* output)
 	}
 }
 
+// output = x/a
 template<typename T> inline
 void divide(const T* x, const T a, const int size, T* output)
 {
 	multiply(x, 1.0/a, size, output);
 }
 
-
-// In-place:  output <op>= a
-
+// output += a
 template<typename T> inline
-void add_inplace(const T a, const int size, T* CXX_RESTRICT output)
+void add_in_place(const T a, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(output: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
@@ -150,8 +154,9 @@ void add_inplace(const T a, const int size, T* CXX_RESTRICT output)
 	}
 }
 
+// output -= a
 template<typename T> inline
-void subtract_inplace(const T a, const int size, T* CXX_RESTRICT output)
+void subtract_in_place(const T a, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(output: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
@@ -159,8 +164,9 @@ void subtract_inplace(const T a, const int size, T* CXX_RESTRICT output)
 	}
 }
 
+// output *= a
 template<typename T> inline
-void multiply_inplace(const T a, const int size, T* CXX_RESTRICT output)
+void multiply_in_place(const T a, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(output: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
@@ -168,10 +174,11 @@ void multiply_inplace(const T a, const int size, T* CXX_RESTRICT output)
 	}
 }
 
+// output /= a
 template<typename T> inline
-void divide_inplace(const T a, const int size, T* CXX_RESTRICT output)
+void divide_in_place(const T a, const int size, T* CXX_RESTRICT output)
 {
-	multiply_inplace(1.0/a, size, output);
+	multiply_in_place(1.0/a, size, output);
 }
 
 

@@ -1,5 +1,4 @@
 #include "main.h"
-#include "numeric/ComplexVector.h"
 
 int main(int argc, char* argv[])
 {
@@ -7,18 +6,90 @@ int main(int argc, char* argv[])
 	//----- Setup -----//
 	//-----------------//
 
-	using Real    = double;
-	using Complex = std::complex<Real>;
+	using Real = double;
 
+	// numeric
 	using namespace numeric;
-	using AlignedVector = std::vector<Real, AlignedAlloc<Real>>;
+	template<typename T>
+	using AlignedAlloc  = aligned::CacheAlignedAllocator<T>;
+	using RealVector    = std::vector<Real, AlignedAlloc<Real>>;
 	using ComplexVector = aligned::ComplexVector<Real>;
+
+	// STL
+	using Complex          = std::complex<Real>;
+	using StdRealVector    = std::vector<Real>;
+	using StdComplexVector = std::vector<Complex>;
 
 	// Convert 'argv'
 	std::vector<std::string> args(argc);
 	for ( int c=0; c<argc; ++c ) {
 		args[c] = std::string( argv[c] );
 	}
+
+
+	//-----------------------------//
+	//----- Interface Testing -----//
+	//-----------------------------//
+
+	{
+		Real value;
+		unsigned size;
+
+		// Construction
+		size  = 10;
+		value = 3.0;
+		ComplexVector z(size, value);
+		FANCY_ASSERT( z.size() == size, "incorrect size: " << z.size() );
+		for ( unsigned i=0; i<size; ++i ) {
+			FANCY_ASSERT( z.real(i) == value, "incorrect value: " << z.real(i) );
+			FANCY_ASSERT( z.imag(i) == 0.0,   "incorrect value: " << z.imag(i) );
+		}
+
+		// Fill
+		value = 5.0;
+		z.fill(value);
+		FANCY_ASSERT( z.size() == size, "incorrect size: " << z.size() );
+		for ( unsigned i=0; i<size; ++i ) {
+			FANCY_ASSERT( z.real(i) == value, "incorrect value: " << z.real(i) );
+			FANCY_ASSERT( z.real(i) == 0.0,   "incorrect value: " << z.imag(i) );
+		}
+
+		/*
+		// TODO
+		a_new.fill(5.0);
+		std::cout << a_new << std::endl;
+
+		a_new.fill(Complex{{1.0, -1.0}});
+		std::cout << a_new << std::endl;
+
+		a_new.resize(15);
+
+		std::cout << a_new;
+		std::cout << "size = " << a_new.size() << std::endl;
+
+		a_new.real(2) = 1.5;
+		a_new.imag(4) = 7.0;
+		std::cout << a_new << std::endl;
+
+		a_new(5) = Complex{{20.0, 30.0}};
+		std::cout << a_new << std::endl;
+
+		Complex a_5 = a_new[5];
+		std::cout << a_5 << std::endl;
+
+		const ComplexVector& b_new = a_new;
+		std::cout << "b_new[5] = " << b_new[5] << std::endl;
+		Complex b_5 = b_new[5];
+		std::cout << "b_5 = " << b_5 << std::endl;
+
+		std::cout << a_5 + b_new[0] << std::endl;
+		*/
+	}
+
+
+	//------------------------//
+	//----- SIMD Testing -----//
+	//------------------------//
 
 	// Number of values
 	int num_neigh = 5;
@@ -47,28 +118,11 @@ int main(int argc, char* argv[])
 
 	//-----  Addition -----//
 
-	ComplexVector a_new(10, 3.0);
-	std::cout << a_new << std::endl;
+	Complex a = {{ 1.0,  2.0 }};
+	Complex b = {{ 3.0, -4.0 }};
 
-	a_new.fill(5.0);
-	std::cout << a_new << std::endl;
-
-	a_new.fill(Complex{{1.0, -1.0}});
-	std::cout << a_new << std::endl;
-
-	a_new.resize(15);
-	std::cout << a_new;
-	std::cout << "size = " << a_new.size() << std::endl;
-
-	a_new.real(2) = 1.5;
-	a_new.imag(4) = 7.0;
-	std::cout << a_new << std::endl;
-
-	a_new(5) = Complex{{20.0, 30.0}};
-	std::cout << a_new << std::endl;
-
-	Complex a_5 = a_new[5];
-	std::cout << a_5 << std::endl;
+	// TODO convert to new type
+	StdComplexVector x_std(len, a);   ComplexVector x_new = x_std;
 
 	/*
 	std::vector<Real> a_std(len, 4), b_std(len, 3), output_std(len, 1.0);
@@ -90,9 +144,9 @@ int main(int argc, char* argv[])
 		aligned::simd::real::add(a_new.data(), b_new.data(), len, output_new.data());
 	}
 	timer_new.stop();
-
-	comparePerformance(header, rmsd(output_std, output_new), timer_std, timer_new);
 	*/
+
+	//comparePerformance(header, rmsd(output_std, output_new), timer_std, timer_new);
 
 	return 0;
 }

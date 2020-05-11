@@ -72,7 +72,9 @@ class ComplexVector
 		assign(size, value);
 	}
 
-	// TODO: initializer list construction and filling
+	// TODO:
+	// - initializer list construction and filling
+	// - construction from / conversion to std::vector<std::complex<T>>
 
 	// Manage size
 	void resize(const size_type size) {
@@ -123,7 +125,7 @@ class ComplexVector
 	}
 	/*
 	// TODO overload for particular types/initializer lists?
-	void fill(const T& value) {
+	void fill(const Complex& value) {
 		assign(size_, value);
 	}
 	*/
@@ -152,11 +154,13 @@ class ComplexVector
 
 	// Object that represents a reference to the 'i'th element of
 	// a ComplexVector, in the sense of 'vec[i]'
-	// - TODO: Rebinding/copying?
+	// - TODO: Rebinding/copying/moving/swap?
+	//   - Goal: make ComplexVector compatible with STL algorithms
+	// - TODO: ElementConstRef?
 	class ElementRef {
 	 public:
 		ElementRef(ComplexVector& vec, const size_type i):
-			vec_(vec), real_(vec.real(i)), imag_(vec.imag(i)) {}
+			/*vec_(vec),*/ real_(vec.real(i)), imag_(vec.imag(i)) {}
 
 		// Change the parent ComplexVector
 		ElementRef& operator=(const Complex& value) {
@@ -170,13 +174,19 @@ class ComplexVector
 			return Complex(real_, imag_);
 		}
 
+		// Access components
+		T&       real()       { return real_; }
+		T&       imag()       { return imag_; }
+		const T& real() const { return real_; }
+		const T& imag() const { return imag_; }
+
 	 private:
-		std::reference_wrapper<ComplexVector> vec_;
-		std::reference_wrapper<T>             real_, imag_;
+		//std::reference_wrapper<ComplexVector> vec_;
+		std::reference_wrapper<T> real_, imag_;
 	};
 
 	// Element access
-	// - By reference (mutable): allows assignment via 'vec[i] = ' ...
+	// - By reference (mutable): allows assignment via 'vec[i] = ...'
 	ElementRef operator()(const size_type i) {
 		return ElementRef(*this, i);
 	}
@@ -191,9 +201,68 @@ class ComplexVector
 		return (*this)(i);
 	}
 
+	// Access underlying block of memory by ptr
+	T*       data()       { return data_.data(); }
+	const T* data() const { return data_.data(); }
+
+	// Access underlying vector (less common)
+	AlignedVector&       vector()       { return data_; }
+	const AlignedVector& vector() const { return data_; }
+
 	// Output
 	template<typename U, typename V>
 	friend std::ostream& operator<<(std::ostream& os, const ComplexVector<U,V>& vec);
+
+
+	//----------------------//
+	//----- Arithmetic -----//
+	//----------------------//
+
+	// TODO: Template expressions?
+	ComplexVector operator+(const ComplexVector& other) {
+		ComplexVector output(size_);
+		simd::real::add( this->data_ptr(), other.data_ptr(), 2*size_, output.data_ptr() );
+		return output;
+	}
+	ComplexVector operator-(const ComplexVector& other) {
+		ComplexVector output(size_);
+		simd::real::subtract( this->data_ptr(), other.data_ptr(), 2*size_, output.data_ptr() );
+		return output;
+	}
+	ComplexVector operator*(const ComplexVector& other) {
+		ComplexVector output(size_);
+		simd::real::multiply( this->data_ptr(), other.data_ptr(), 2*size_, output.data_ptr() );
+		return output;
+	}
+	ComplexVector operator/(const ComplexVector& other) {
+		ComplexVector output(size_);
+		simd::real::divide( this->data_ptr(), other.data_ptr(), 2*size_, output.data_ptr() );
+		return output;
+	}
+
+	ComplexVector& operator+=(const ComplexVector& other) {
+#ifndef NDEBUG
+		// TODO: check lengths
+		// TODO: Variadic template for checking that none of a set of ptrs alias one another
+		FANCY_ASSERT( this->data_ptr() != other.data_ptr(), "illegal aliasing" );
+#endif
+		simd::real::add_in_place( other.data_ptr(), 2*size_, this->data_ptr() );
+		return *this;
+	}
+	ComplexVector& operator-=(const ComplexVector& other) {
+		simd::real::subtract_in_place( other.data_ptr(), 2*size_, this->data_ptr() );
+		return *this;
+	}
+	ComplexVector& operator*=(const ComplexVector& other) {
+		simd::real::multiply_in_place( other.data_ptr(), 2*size_, this->data_ptr() );
+		return *this;
+	}
+	ComplexVector& operator/=(const ComplexVector& other) {
+		simd::real::divide_in_place( other.data_ptr(), 2*size_, this->data_ptr() );
+		return *this;
+	}
+
+	// TODO: more operators
 
  private:
 	// Complex values are stored as sequential pairs.
@@ -223,5 +292,7 @@ std::ostream& operator<<(std::ostream& os, const ComplexVector<T,AlignedVector>&
 
 } // end namespace aligned
 } // end namespace numeric
+
+#include "ComplexVectorKernels.h"
 
 #endif // ifndef COMPLEX_VECTOR_H
