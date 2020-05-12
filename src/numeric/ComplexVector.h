@@ -1,8 +1,6 @@
 /*
  * SIMD-friendly complex vector
  *
- * - Note: operators that return a ComplexVector rely on copy elision
- *   (NRVO) for performance
 */
 
 #pragma once
@@ -254,26 +252,27 @@ class ComplexVector
 	}
 	ComplexVector operator*(const ComplexVector& other) {
 		ComplexVector output(size_);
-		simd::complex::multiply( this->data(), other.data(), 2*size_, output.data() );
+		simd::complex::multiply( this->data(), other.data(), size_, output.data() );
 		return output;
 	}
 	ComplexVector operator/(const ComplexVector& other) {
 		ComplexVector output(size_);
-		simd::complex::divide( this->data(), other.data(), 2*size_, output.data() );
+		simd::complex::divide( this->data(), other.data(), size_, output.data() );
 		return output;
 	}
 
 	ComplexVector& operator+=(const ComplexVector& other) {
 #ifndef NDEBUG
-		// TODO: check lengths
-		// TODO: Variadic template for checking that none of a set of ptrs alias one another
+		// TODO: General-purpose consistency checking
+		// - Check lengths
+		// - Variadic template for checking that none of a set of ptrs alias one another?
 		FANCY_ASSERT( this->data() != other.data(), "illegal aliasing" );
 #endif
-		simd::real::add_in_place( other.data(), 2*size_, this->data() );
+		simd::complex::add_in_place( other.data(), size_, this->data() );
 		return *this;
 	}
 	ComplexVector& operator-=(const ComplexVector& other) {
-		simd::real::subtract_in_place( other.data(), 2*size_, this->data() );
+		simd::complex::subtract_in_place( other.data(), size_, this->data() );
 		return *this;
 	}
 	/*

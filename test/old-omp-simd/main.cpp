@@ -110,10 +110,11 @@ int main(int argc, char* argv[])
 	int num_neigh = 5;
 	int l = 6;
 	int len = num_neigh*l;  // default
+	len = 5000;
 	if ( argc > 1 ) {
 		len = std::stoi( args[1] );
 	}
-
+	
 	// Number of iterations to perform
 	//int num_iterations = 100000;
 	int num_iterations = 200000;

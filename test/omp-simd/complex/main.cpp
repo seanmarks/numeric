@@ -101,15 +101,23 @@ int main(int argc, char* argv[])
 	int num_neigh = 5;
 	int l = 6;
 	int len = num_neigh*l;  // default
-	if ( argc > 1 ) {
-		len = std::stoi( args[1] );
-	}
 	len = 5000;
 
 	// Number of iterations to perform
-	//int num_iterations = 100000;
-	int num_iterations = 200000;
+	int num_iterations = 100000;
+	//int num_iterations = 200000;
 	//int num_iterations = 1000000;
+
+	// Input handling
+	if ( argc > 1 ) {
+		len = std::stoi( args[1] );
+	}
+	FANCY_ASSERT(len >= 1, "invalid length");
+	if ( argc > 2 ) {
+		num_iterations = std::stoi( args[2] );
+	}
+	FANCY_ASSERT(len >= 1, "invalid length");
+
 
 	aligned::Allocator<Real> loose_allocator;
 	std::cout << "OpenMP SIMD Testing\n"
@@ -118,76 +126,113 @@ int main(int argc, char* argv[])
 	          << "     iterations:  " << num_iterations << "\n"
 	          << std::endl;
 
-	Timer timer_std, timer_new;
+	Timer timer_old, timer_new;
 	std::string header;
 
+	// Sample values
 	Complex alpha = {{ 1.0,  2.0 }};
 	Complex beta  = {{ 3.0, -4.0 }};
+	Complex one   = {{ 1.0,  0.0 }};
+	//Complex unit  = {{ 1.0/sqrt(2.0), -1.0/sqrt(2.0) }};
+	Complex unit  = {{ 0.0, -1.0 }};
+	StdComplexVector u_old(len, alpha);  ComplexVector u_new      = u_old;
+	StdComplexVector v_old(len, beta);   ComplexVector v_new      = v_old;
+	StdComplexVector output_old(len);    ComplexVector output_new = output_old;
 
-	StdComplexVector u_std(len, alpha);  ComplexVector u_new      = u_std;
-	StdComplexVector v_std(len, beta);   ComplexVector v_new      = v_std;
-	StdComplexVector output_std(len);    ComplexVector output_new = output_std;
 
+	std::cout << "//----- Vector <op> Vector -----//" << std::endl;
 
-	header = "Addition:  output = u + v";
+	header = "Add:  output = u + v";
 
-	timer_std.start();
+	timer_old.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		for ( int i=0; i<len; ++i ) {
-			output_std[i] = u_std[i] + v_std[i];
+			output_old[i] = u_old[i] + v_old[i];
 		}
 	}
-	timer_std.stop();
+	timer_old.stop();
+	std::cout << "  u_old[0] = " << u_old[0]          << std::endl;
 
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		aligned::simd::complex::add(u_new.data(), v_new.data(), len, output_new.data());
 	}
 	timer_new.stop();
+	std::cout << "  u_new[0] = " << Complex(u_new[0]) << std::endl;
 
-	check(output_new, output_std);
-	comparePerformance(header, rmsd(output_new, output_std), timer_new, timer_std);
+	check(output_new, output_old);
+	comparePerformance(header, rmsd(output_new, output_old), timer_new, timer_old);
 
 
-	header = "Multiplication:  output = u * v  (element-wise)";
+	header = "Mul:  output = u * v  (element-wise)";
 
-	timer_std.start();
+	timer_old.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		for ( int i=0; i<len; ++i ) {
-			output_std[i] = u_std[i]*v_std[i];
+			output_old[i] = u_old[i]*v_old[i];
 		}
 	}
-	timer_std.stop();
+	timer_old.stop();
+	std::cout << "  output_old[0] = " << output_old[0] << std::endl;
 
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		aligned::simd::complex::multiply(u_new.data(), v_new.data(), len, output_new.data());
 	}
 	timer_new.stop();
+	std::cout << "  output_new[0] = " << Complex(output_new[0]) << std::endl;
 
-	check(output_new, output_std);
-	comparePerformance(header, rmsd(output_new, output_std), timer_new, timer_std);
+	check(output_new, output_old);
+	comparePerformance(header, rmsd(output_new, output_old), timer_new, timer_old);
 
 
-	header = "Division:  output = u * v  (element-wise)";
+	header = "Div:  output = u * v  (element-wise)";
 
-	timer_std.start();
+	timer_old.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		for ( int i=0; i<len; ++i ) {
-			output_std[i] = u_std[i]/v_std[i];
+			output_old[i] = u_old[i]/v_old[i];
 		}
 	}
-	timer_std.stop();
+	timer_old.stop();
+	std::cout << "  output_old[0] = " << output_old[0] << std::endl;
 
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		aligned::simd::complex::divide(u_new.data(), v_new.data(), len, output_new.data());
 	}
 	timer_new.stop();
+	std::cout << "  output_new[0] = " << Complex(output_new[0]) << std::endl;
 
-	check(output_new, output_std);
-	comparePerformance(header, rmsd(output_new, output_std), timer_new, timer_std);
+	check(output_new, output_old);
+	comparePerformance(header, rmsd(output_new, output_old), timer_new, timer_old);
 
+
+	std::cout << "//----- Vector <op> Scalar (in-place) -----//" << std::endl;
+
+
+	header = "Mul:  output = alpha*output  (element-wise)";
+
+	output_old.assign(len, alpha);
+	timer_old.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		for ( int i=0; i<len; ++i ) {
+			output_old[i] = unit*output_old[i];
+		}
+	}
+	timer_old.stop();
+	std::cout << "  output_old[0] = " << output_old[0] << std::endl;
+
+	output_new.assign(len, alpha);
+	timer_new.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		aligned::simd::complex::left_multiply_in_place(unit.real(), unit.imag(), len, output_new.data());
+	}
+	timer_new.stop();
+	std::cout << "  output_new[0] = " << Complex(output_new[0]) << std::endl;
+
+	check(output_new, output_old);
+	comparePerformance(header, rmsd(output_new, output_old), timer_new, timer_old);
 
 	return 0;
 }

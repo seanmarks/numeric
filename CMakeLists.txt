@@ -138,7 +138,7 @@ add_definitions(${CXX_RESTRICT_FLAG})
 set(NUMERIC_OPT_DEBUG_FLAGS   -O0)
 set(NUMERIC_OPT_RELEASE_FLAGS -O3 -ffast-math -march=native)
 
-# FIXME
+# FIXME DEBUG
 #list(APPEND NUMERIC_OPT_RELEASE_FLAGS -fopt-info-vec-missed)
 list(APPEND NUMERIC_OPT_RELEASE_FLAGS -fopt-info-vec-optimized)
 list(APPEND NUMERIC_OPT_RELEASE_FLAGS -ftree-vectorizer-verbose=1)
