@@ -86,6 +86,13 @@ class AlmostEqualUlps
 		max_diff_(max_diff), max_ulps_diff_(max_ulps_diff)
 	{}
 
+	void setMaxUlpsDiff(const Int max_ulps_diff) {
+		max_ulps_diff_ = max_ulps_diff;
+	}
+	Int getMaxUlpsDiff() const {
+		return max_ulps_diff_;
+	}
+
 	bool operator()(const T& a, const T& b) {
 		return are_almost_equal(a, b);
 	}

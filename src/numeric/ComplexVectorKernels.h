@@ -1,4 +1,6 @@
 /*
+ * TODO: convenience wrappers around low-level SIMD functions
+ *
  * !!! Don't include this file directly !!!
  */
 

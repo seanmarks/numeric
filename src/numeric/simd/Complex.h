@@ -1,24 +1,105 @@
-// SIMD kernels and helper functions
-// - Uses OpenMP SIMD
-// - Functions generally assume cache-aligned data
+/*
+ * SIMD kernels and helper functions for complex vectors
+ * - Use OpenMP SIMD
+ * - Assume cache-aligned data
+ * - Complex vectors have the following layout
+ *   - size       = length of complex vectors = number of complex values of the form a+ib
+ *   - num_values = 2*size = total number of real numbers required to represent it
+ */
+
 
 #pragma once
-#ifndef ALIGNED_SIMD_H
-#define ALIGNED_SIMD_H
+#ifndef ALIGNED_SIMD_COMPLEX_H
+#define ALIGNED_SIMD_COMPLEX_H
 
 #include <cmath>
 #include <cstddef>
 
-// TODO how best to choose?
-#ifndef ALIGNED_SIMD_LEN 
-#  define ALIGNED_SIMD_LEN 16
-#endif
+namespace numeric {  // numeric arrays only
+namespace aligned {  // operations on cache-aligned data
 
-namespace numeric {
-namespace aligned {
-namespace simd    {
+namespace simd    {  // SIMD kernels
+namespace complex {  // complex vectors
 
-namespace complex {
+
+//-------------------------//
+//----- Vector Inputs -----//
+//-------------------------//
+
+// output = u + v
+template<typename T> inline
+void add(const T* CXX_RESTRICT u, const T* CXX_RESTRICT v, const int size, T* CXX_RESTRICT output)
+{
+	simd::real::add(u, v, 2*size, output);
+}
+
+// output = u - v
+template<typename T> inline
+void subtract(const T* CXX_RESTRICT u, const T* CXX_RESTRICT v, const int size, T* CXX_RESTRICT output)
+{
+	simd::real::subtract(u, v, 2*size, output);
+}
+
+// output = u * v (element-wise)
+template<typename T> inline
+void multiply(const T* CXX_RESTRICT u, const T* CXX_RESTRICT v, const int size, T* CXX_RESTRICT output)
+{
+	const int num_values = 2*size;
+	int im = 1;
+	#pragma omp simd aligned(u, v, output: CACHE_LINE_SIZE) private(im)
+	for ( int re=0; re<num_values; re+=2 ) {
+		im = re + 1; 
+		output[re] = u[re]*v[re] - u[im]*v[im];
+		output[im] = u[re]*v[im] + u[im]*v[re];
+	}
+}
+
+// output = u / v (element-wise)
+template<typename T> inline
+void divide(const T* CXX_RESTRICT u, const T* CXX_RESTRICT v, const int size, T* CXX_RESTRICT output)
+{
+	const int num_values = 2*size;
+	int im = 1;
+	T inv_norm_v_sq;
+	#pragma omp simd aligned(u, v, output: CACHE_LINE_SIZE) private(im, inv_norm_v_sq)
+	for ( int re=0; re<num_values; re+=2 ) {
+		im = re + 1;
+		inv_norm_v_sq = 1.0/(v[re]*v[re] + v[im]*v[im]);  // 1/|v|^2
+		output[re] = ( u[re]*v[re] + u[im]*v[im] )*inv_norm_v_sq;
+		output[im] = ( u[im]*v[re] - u[re]*v[im] )*inv_norm_v_sq;
+
+		//output[re] = ( u[re]*v[re] - u[im]*v[im] )*inv_norm_v_sq;
+		//output[im] = ( u[im]*v[re] - u[re]*v[im] )*inv_norm_v_sq;
+	}
+}
+
+// TODO in-place
+
+
+/*
+// output = x * y (element-wise)
+template<typename T> inline
+void multiply(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
+{
+	#pragma omp simd aligned(x, y, output: CACHE_LINE_SIZE)
+	for ( int i=0; i<size; ++i ) {
+		output[i] = x[i]*y[i];
+	}
+}
+
+// output = x / y (element-wise)
+template<typename T> inline
+void divide(const T* CXX_RESTRICT x, const T* CXX_RESTRICT y, const int size, T* CXX_RESTRICT output)
+{
+	#pragma omp simd aligned(x, y, output: CACHE_LINE_SIZE)
+	for ( int i=0; i<size; ++i ) {
+		output[i] = x[i]/y[i];
+	}
+}
+*/
+
+
+
 
 // TODO
 // - Rename functions based on specifiers?
@@ -100,9 +181,9 @@ void divide(const T* re_x, const T* im_x, const T re_a, const T im_a,
 */
 
 } // end namespace complex
-
 } // end namespace simd
+
 } // end namespace aligned
 } // end namespace numeric
 
-#endif // define ALIGNED_SIMD_H
+#endif // define ALIGNED_SIMD_COMPLEX_H

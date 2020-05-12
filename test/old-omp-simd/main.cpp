@@ -128,10 +128,10 @@ int main(int argc, char* argv[])
 
 	Timer timer_std, timer_new;
 
-
-	//-------------------------//
-	//----- ComplexVector -----//
-	//-------------------------//
+	std::cout << "//-------------------------//" << std::endl;
+	std::cout << "//----- ComplexVector -----//" << std::endl;
+	std::cout << "//-------------------------//" << std::endl;
+	std::cout  << std::endl;
 
 	// Vectors of new type
 	ComplexVector<Real> a(len), b(len), c(len), d(len);
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 	output_std = ones_std;
 	timer_std.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		#pragma omp simd
+		//#pragma omp simd
 		for ( int i=0; i<len; ++i ) {
 			output_std[i] += z0;
 		}
@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
 	output_std = ones_std;
 	timer_std.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		#pragma omp simd
+		//#pragma omp simd
 		for ( int i=0; i<len; ++i ) {
 			output_std[i] *= z0;
 		}
@@ -266,9 +266,10 @@ int main(int argc, char* argv[])
 	comparePerformance(header, rmsd(output_std, output), timer_std, timer_new);
 
 
-	//--------------------------//
-	//----- VectorComplexN -----//
-	//--------------------------//
+	std::cout << "//--------------------------//" << std::endl;
+	std::cout << "//----- VectorComplexN -----//" << std::endl;
+	std::cout << "//--------------------------//" << std::endl;
+	std::cout  << std::endl;
 
 	std::cout << std::endl;
 
@@ -283,7 +284,7 @@ int main(int argc, char* argv[])
 	for ( int k=0; k<num_iterations; ++k ) {
 		//#pragma omp simd
 		for ( int i=0; i<len; ++i ) {
-			#pragma omp simd
+			//#pragma omp simd
 			for ( int d=0; d<3; ++d ) {
 				x_std[i][d] *= a_std[i];
 			}

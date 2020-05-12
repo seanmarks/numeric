@@ -137,10 +137,16 @@ add_definitions(${CXX_RESTRICT_FLAG})
 # Optimizations
 set(NUMERIC_OPT_DEBUG_FLAGS   -O0)
 set(NUMERIC_OPT_RELEASE_FLAGS -O3 -ffast-math -march=native)
-if(GNU)
+
+# FIXME
+#list(APPEND NUMERIC_OPT_RELEASE_FLAGS -fopt-info-vec-missed)
+list(APPEND NUMERIC_OPT_RELEASE_FLAGS -fopt-info-vec-optimized)
+list(APPEND NUMERIC_OPT_RELEASE_FLAGS -ftree-vectorizer-verbose=1)
+
+#if(GNU)
 	# FIXME this does not seem to be working
-	string(APPEND NUMERIC_OPT_RELEASE_FLAGS -ftree-vectorize)
-endif()
+	#string(APPEND NUMERIC_OPT_RELEASE_FLAGS -ftree-vectorize)
+#endif()
 add_compile_options("$<$<CONFIG:DEBUG>:${NUMERIC_OPT_DEBUG_FLAGS}>")
 add_compile_options("$<$<CONFIG:RELEASE>:${NUMERIC_OPT_RELEASE_FLAGS}>")
 #target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:DEBUG>:${NUMERIC_OPT_DEBUG_FLAGS}>")

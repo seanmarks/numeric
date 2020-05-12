@@ -72,19 +72,36 @@ class ComplexVector
 		assign(size, value);
 	}
 
+	// TODO require OtherComplexVector::value_type convertible to std::complex<T>?
+	template<typename OtherComplexVector>
+	ComplexVector(const OtherComplexVector& vec) {
+		unsigned len = vec.size();
+		resize(len);
+		for ( unsigned i=0; i<len; ++i ) {
+			this->real(i) = vec[i].real();
+			this->imag(i) = vec[i].imag();
+		}
+	}
+
 	// TODO:
 	// - initializer list construction and filling
 	// - construction from / conversion to std::vector<std::complex<T>>
 
 	// Manage size
+	size_type size() const {
+		return size_;
+	}
 	void resize(const size_type size) {
 		if ( size_ != size ) {
 			size_ = size;
 			data_.resize(2*size_);
 		}
 	}
-	void resetSize() {
+	void reset() {
 		resize(0);
+	}
+	void resetSize() {
+		reset();
 	}
 	void clear() {
 		data_.clear();
@@ -93,19 +110,16 @@ class ComplexVector
 		return std::numeric_limits<size_type>::max()/2;
 	}
 
-	size_type size() const {
-		return size_;
-	}
+	// Capacity
 	size_type capacity() const {
 		return data_.capacity()/2;
 	}
-
-	// Capacity
 	void reserve(const size_type size) {
 		data_.reserve(2*size);
 	}
 
 	// Set size and contents
+	// - TODO: set using iterators
 	void assign(const size_type size, const Complex& value) {
 		resize(size);
 		unsigned len = data_.size();
@@ -145,6 +159,10 @@ class ComplexVector
 		one();
 	}
 
+
+	//------------------------------------//
+	//----- Element/Component Access -----//
+	//------------------------------------//
 
 	// Access real/imag components of elements
 	T&       real(const size_type i)       { return data_[2*i];   }
@@ -201,6 +219,11 @@ class ComplexVector
 		return (*this)(i);
 	}
 
+
+	//-----------------------//
+	//----- Data Access -----//
+	//-----------------------//
+
 	// Access underlying block of memory by ptr
 	T*       data()       { return data_.data(); }
 	const T* data() const { return data_.data(); }
@@ -221,22 +244,22 @@ class ComplexVector
 	// TODO: Template expressions?
 	ComplexVector operator+(const ComplexVector& other) {
 		ComplexVector output(size_);
-		simd::real::add( this->data_ptr(), other.data_ptr(), 2*size_, output.data_ptr() );
+		simd::complex::add( this->data(), other.data(), size_, output.data() );
 		return output;
 	}
 	ComplexVector operator-(const ComplexVector& other) {
 		ComplexVector output(size_);
-		simd::real::subtract( this->data_ptr(), other.data_ptr(), 2*size_, output.data_ptr() );
+		simd::complex::subtract( this->data(), other.data(), size_, output.data() );
 		return output;
 	}
 	ComplexVector operator*(const ComplexVector& other) {
 		ComplexVector output(size_);
-		simd::real::multiply( this->data_ptr(), other.data_ptr(), 2*size_, output.data_ptr() );
+		simd::complex::multiply( this->data(), other.data(), 2*size_, output.data() );
 		return output;
 	}
 	ComplexVector operator/(const ComplexVector& other) {
 		ComplexVector output(size_);
-		simd::real::divide( this->data_ptr(), other.data_ptr(), 2*size_, output.data_ptr() );
+		simd::complex::divide( this->data(), other.data(), 2*size_, output.data() );
 		return output;
 	}
 
@@ -244,23 +267,25 @@ class ComplexVector
 #ifndef NDEBUG
 		// TODO: check lengths
 		// TODO: Variadic template for checking that none of a set of ptrs alias one another
-		FANCY_ASSERT( this->data_ptr() != other.data_ptr(), "illegal aliasing" );
+		FANCY_ASSERT( this->data() != other.data(), "illegal aliasing" );
 #endif
-		simd::real::add_in_place( other.data_ptr(), 2*size_, this->data_ptr() );
+		simd::real::add_in_place( other.data(), 2*size_, this->data() );
 		return *this;
 	}
 	ComplexVector& operator-=(const ComplexVector& other) {
-		simd::real::subtract_in_place( other.data_ptr(), 2*size_, this->data_ptr() );
+		simd::real::subtract_in_place( other.data(), 2*size_, this->data() );
 		return *this;
 	}
+	/*
 	ComplexVector& operator*=(const ComplexVector& other) {
-		simd::real::multiply_in_place( other.data_ptr(), 2*size_, this->data_ptr() );
+		simd::real::multiply_in_place( other.data(), 2*size_, this->data() );
 		return *this;
 	}
 	ComplexVector& operator/=(const ComplexVector& other) {
-		simd::real::divide_in_place( other.data_ptr(), 2*size_, this->data_ptr() );
+		simd::real::divide_in_place( other.data(), 2*size_, this->data() );
 		return *this;
 	}
+	*/
 
 	// TODO: more operators
 

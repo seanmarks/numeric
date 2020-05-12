@@ -14,7 +14,7 @@
 #include "numeric/ComplexVector.h"
 #include "numeric/Timer.h"
 
-void comparePerformance(std::string header, const double rmsd, const Timer& timer_old, const Timer& timer_new)
+void comparePerformance(std::string header, const double rmsd, const Timer& timer_new, const Timer& timer_old)
 {
 	double t_old_ms = timer_old.get_duration_ms();
 	double t_new_ms = timer_new.get_duration_ms();
@@ -39,26 +39,24 @@ void comparePerformance(std::string header, const double rmsd, const Timer& time
 }
 
 
-
-/*
 // TODO update
-template<typename V, typename W>
-double rmsd(const V& std_vec, const W& new_vec)
+template<typename T>
+double rmsd(
+	const numeric::aligned::ComplexVector<T>& new_vec,
+	const std::vector<std::complex<T>>&       std_vec
+)
 {
 	double sum = 0.0;
 	unsigned length = std_vec.size();
 	assert( length == new_vec.size() );
 
 	for ( unsigned i=0; i<length; ++i ) {
-		double delta = std_vec[i] - new_vec[i];
-		sum += delta*delta;
+		sum += std::norm( std_vec[i] - new_vec[i] );  // std::norm(z) = |z|^2
 	}
 	return sqrt( sum/static_cast<double>(length) );
 }
-*/
 
-// TODO update
-//template<typename V, typename W>
+
 template<typename T>
 void check(
 	const numeric::aligned::ComplexVector<T>& new_vec,
@@ -69,11 +67,18 @@ void check(
 	FANCY_ASSERT( length == new_vec.size(), "length mismatch" );
 
 	numeric::AlmostEqualUlps<T> almost_equal_ulps;
+	almost_equal_ulps.setMaxUlpsDiff(10);  // TODO: tune this
+
 	for ( unsigned i=0; i<length; ++i ) {
-		FANCY_ASSERT( almost_equal_ulps_d(new_vec[i].real(), std_vec[i].real()),
-		              "numbers should be close in double-ULPs (delta = " << new_vec[i].real() - std_vec[i].real() << ")" );
-		FANCY_ASSERT( almost_equal_ulps_d(new_vec[i].imag(), std_vec[i].imag()),
-		              "numbers should be close in double-ULPs (delta = " << new_vec[i].imag() - std_vec[i].imag() << ")" );
+		FANCY_ASSERT( almost_equal_ulps(new_vec[i].real(), std_vec[i].real()),
+		              "numbers should be close in ULPs"
+		              << "(value = " << new_vec[i].real() << ", ref = " << std_vec[i].real()
+		              << ", diff = " << new_vec[i].real() - std_vec[i].real() << ")" );
+
+		FANCY_ASSERT( almost_equal_ulps(new_vec[i].imag(), std_vec[i].imag()),
+		              "numbers should be close in ULPs"
+		              << "(value = " << new_vec[i].imag() << ", ref = " << std_vec[i].imag()
+		              << ", diff = " << new_vec[i].imag() - std_vec[i].imag() << ")" );
 	}
 }
 

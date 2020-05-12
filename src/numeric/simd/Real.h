@@ -6,16 +6,17 @@
 #include <cmath>
 #include <cstddef>
 
-namespace numeric {  // numeric arrays only
-namespace aligned {  // operations on cache-aligned data
-namespace simd {     // SIMD kernels
-namespace real {     // real arrays
-
 // TODO: choose based on 
 //  (1) available instruction set
 //  (2) sizeof(T)
 //  ... or allow the compiler to figure it out
 //static constexpr int SIMD_LEN = 4;
+
+namespace numeric {  // numeric arrays only
+namespace aligned {  // operations on cache-aligned data
+
+namespace simd {  // SIMD kernels
+namespace real {  // real vectors
 
 
 //-------------------------//
@@ -129,7 +130,7 @@ void subtract(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRIC
 
 // output = a*x
 template<typename T> inline
-void multiply(const T* x, const T a, const int size, T* output)
+void multiply(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRICT output)
 {
 	#pragma omp simd aligned(x, output: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
@@ -139,7 +140,7 @@ void multiply(const T* x, const T a, const int size, T* output)
 
 // output = x/a
 template<typename T> inline
-void divide(const T* x, const T a, const int size, T* output)
+void divide(const T* CXX_RESTRICT x, const T a, const int size, T* CXX_RESTRICT output)
 {
 	multiply(x, 1.0/a, size, output);
 }

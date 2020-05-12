@@ -1,5 +1,8 @@
 #include "main.h"
 
+template<typename T>
+using AlignedAlloc = numeric::aligned::CacheAlignedAllocator<T>;
+
 int main(int argc, char* argv[])
 {
 	//-----------------//
@@ -10,8 +13,6 @@ int main(int argc, char* argv[])
 
 	// numeric
 	using namespace numeric;
-	template<typename T>
-	using AlignedAlloc  = aligned::CacheAlignedAllocator<T>;
 	using RealVector    = std::vector<Real, AlignedAlloc<Real>>;
 	using ComplexVector = aligned::ComplexVector<Real>;
 
@@ -51,7 +52,7 @@ int main(int argc, char* argv[])
 		FANCY_ASSERT( z.size() == size, "incorrect size: " << z.size() );
 		for ( unsigned i=0; i<size; ++i ) {
 			FANCY_ASSERT( z.real(i) == value, "incorrect value: " << z.real(i) );
-			FANCY_ASSERT( z.real(i) == 0.0,   "incorrect value: " << z.imag(i) );
+			FANCY_ASSERT( z.imag(i) == 0.0,   "incorrect value: " << z.imag(i) );
 		}
 
 		/*
@@ -91,6 +92,11 @@ int main(int argc, char* argv[])
 	//----- SIMD Testing -----//
 	//------------------------//
 
+	std::cout << "//-------------------------//" << std::endl;
+	std::cout << "//----- ComplexVector -----//" << std::endl;
+	std::cout << "//-------------------------//" << std::endl;
+	std::cout  << std::endl;
+
 	// Number of values
 	int num_neigh = 5;
 	int l = 6;
@@ -115,38 +121,73 @@ int main(int argc, char* argv[])
 	Timer timer_std, timer_new;
 	std::string header;
 
+	Complex alpha = {{ 1.0,  2.0 }};
+	Complex beta  = {{ 3.0, -4.0 }};
 
-	//-----  Addition -----//
+	StdComplexVector u_std(len, alpha);  ComplexVector u_new      = u_std;
+	StdComplexVector v_std(len, beta);   ComplexVector v_new      = v_std;
+	StdComplexVector output_std(len);    ComplexVector output_new = output_std;
 
-	Complex a = {{ 1.0,  2.0 }};
-	Complex b = {{ 3.0, -4.0 }};
 
-	// TODO convert to new type
-	StdComplexVector x_std(len, a);   ComplexVector x_new = x_std;
+	header = "Addition:  output = u + v";
 
-	/*
-	std::vector<Real> a_std(len, 4), b_std(len, 3), output_std(len, 1.0);
-	AlignedVector     a_new(len, 4), b_new(len, 3), output_new(len, 1.0);
-
-	header = "Addition (+)";
-	
 	timer_std.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		#pragma omp simd
 		for ( int i=0; i<len; ++i ) {
-			output_std[i] = a_std[i] + b_std[i];
+			output_std[i] = u_std[i] + v_std[i];
 		}
 	}
 	timer_std.stop();
 
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		aligned::simd::real::add(a_new.data(), b_new.data(), len, output_new.data());
+		aligned::simd::complex::add(u_new.data(), v_new.data(), len, output_new.data());
 	}
 	timer_new.stop();
-	*/
 
-	//comparePerformance(header, rmsd(output_std, output_new), timer_std, timer_new);
+	check(output_new, output_std);
+	comparePerformance(header, rmsd(output_new, output_std), timer_new, timer_std);
+
+
+	header = "Multiplication:  output = u * v  (element-wise)";
+
+	timer_std.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		for ( int i=0; i<len; ++i ) {
+			output_std[i] = u_std[i]*v_std[i];
+		}
+	}
+	timer_std.stop();
+
+	timer_new.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		aligned::simd::complex::multiply(u_new.data(), v_new.data(), len, output_new.data());
+	}
+	timer_new.stop();
+
+	check(output_new, output_std);
+	comparePerformance(header, rmsd(output_new, output_std), timer_new, timer_std);
+
+
+	header = "Division:  output = u * v  (element-wise)";
+
+	timer_std.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		for ( int i=0; i<len; ++i ) {
+			output_std[i] = u_std[i]/v_std[i];
+		}
+	}
+	timer_std.stop();
+
+	timer_new.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		aligned::simd::complex::divide(u_new.data(), v_new.data(), len, output_new.data());
+	}
+	timer_new.stop();
+
+	check(output_new, output_std);
+	comparePerformance(header, rmsd(output_new, output_std), timer_new, timer_std);
+
 
 	return 0;
 }
