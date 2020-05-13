@@ -1,13 +1,15 @@
 /*
- * SIMD-friendly complex vector 
- * - Emulates std::vector<std::complex<T>>
+ * SIMD-friendly vector of complex-valued arrays
+ * - Emulates an N-dimensional complex vector:
+ *     std::vector< std::array<std::complex<T>,N> >
  *
 */
 
 #pragma once
-#ifndef COMPLEX_VECTOR_H
-#define COMPLEX_VECTOR_H
+#ifndef COMPLEX_ARRAY_VECTOR_H
+#define COMPLEX_ARRAY_VECTOR_H
 
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <complex>
@@ -20,6 +22,7 @@
 #include <vector>
 
 #include "Aligned.h"
+#include "ComplexVector.h"
 
 namespace numeric {
 namespace aligned {
@@ -27,15 +30,20 @@ namespace aligned {
 template<typename T>
 using DefaultAlignedVector = std::vector<T, CacheAlignedAllocator<T>>;
 
+template<typename T>
+using DefaultAlignedComplexVector = ComplexVector<T, CacheAlignedAllocator<T>>;
+
 template<
-	typename T,
-	typename AlignedVector = DefaultAlignedVector<T>
+	typename    T,
+	std::size_t N,
+	typename    AlignedComplexVector = DefaultAlignedComplexVector<T>
 >
-class ComplexVector
+class ComplexArrayVector
 {
  public:
 	// Sanity checks
-	static_assert(std::is_same<T, typename AlignedVector::value_type>::value, "type mismatch");
+	//static_assert(std::is_same<T, typename DefaultAlignedComplexVector::value_type>::value, "type mismatch");
+	static_assert(N > 0, "empty arrays are not allowed");
 
 	using size_type = std::size_t;
 
@@ -59,22 +67,27 @@ class ComplexVector
 
 	using Complex = std::complex<T>;
 
-	ComplexVector(): data_(0), size_(0) {}
+	ComplexArrayVector() {
+		for ( unsigned n=0; n<N; ++n ) {
+			data_[n].clear();
+		}
+	}
 
-	ComplexVector(const size_type size) {
+	ComplexArrayVector(const size_type size) {
 		resize(size);
 	}
-	ComplexVector(const size_type size, const Complex& value) {
+	ComplexArrayVector(const size_type size, const Complex& value) {
 		assign(size, value);
 	}
-	ComplexVector(const size_type size, const T& value) {
+	ComplexArrayVector(const size_type size, const T& value) {
 		assign(size, value);
 	}
 
-	template<typename OtherComplexVector,
-	         typename std::enable_if< std::is_convertible<typename OtherComplexVector::value_type, Complex>::value >::type* = nullptr
+	/*
+	template<typename OtherComplexArrayVector,
+	         typename std::enable_if< std::is_convertible<typename OtherComplexArrayVector::value_type, Complex>::value >::type* = nullptr
 	>
-	ComplexVector(const OtherComplexVector& vec) {
+	ComplexArrayVector(const OtherComplexArrayVector& vec) {
 		unsigned len = vec.size();
 		resize(len);
 		for ( unsigned i=0; i<len; ++i ) {
@@ -82,6 +95,7 @@ class ComplexVector
 			this->imag(i) = vec[i].imag();
 		}
 	}
+	*/
 
 	// TODO:
 	// - initializer list construction and filling
@@ -89,12 +103,11 @@ class ComplexVector
 
 	// Manage size
 	size_type size() const {
-		return size_;
+		return data_[0].size();
 	}
 	void resize(const size_type size) {
-		if ( size_ != size ) {
-			size_ = size;
-			data_.resize(2*size_);
+		for ( unsigned n=0; n<N; ++n ) {
+			data_[n].resize(size);
 		}
 	}
 	void reset() {
@@ -104,7 +117,9 @@ class ComplexVector
 		reset();
 	}
 	void clear() {
-		data_.clear();
+		for ( unsigned n=0; n<N; ++n ) {
+			data_[n].clear();
+		}
 	}
 	size_type max_size() const noexcept {
 		return std::numeric_limits<size_type>::max()/2;
@@ -112,20 +127,23 @@ class ComplexVector
 
 	// Capacity
 	size_type capacity() const {
-		return data_.capacity()/2;
+		size_type min_capacity = data_[0].capacity();
+		for ( unsigned n=1; n<N; ++n ) {
+			min_capacity = std::min(min_capacity, data_[n].capacity());
+		}
+		return min_capacity;
 	}
 	void reserve(const size_type size) {
-		data_.reserve(2*size);
+		for ( unsigned n=0; n<N; ++n ) {
+			data_[n].reserve(size);
+		}
 	}
 
 	// Set size and contents
 	// - TODO: set using iterators
 	void assign(const size_type size, const Complex& value) {
-		resize(size);
-		unsigned len = data_.size();
-		for ( unsigned k=0; k<len; k+=2 ) {
-			data_[k]   = value.real();
-			data_[k+1] = value.imag();
+		for ( unsigned n=0; n<N; ++n ) {
+			data_[n].assign(size, value);
 		}
 	}
 	void assign(const size_type size, const T& value) {
@@ -135,7 +153,9 @@ class ComplexVector
 	// Set value
 	template<typename U>
 	void fill(const U& value) {
-		assign(size_, value);
+		for ( unsigned n=0; n<N; ++n ) {
+			data_[n].fill(value);
+		}
 	}
 	/*
 	// TODO overload for particular types/initializer lists?
@@ -145,8 +165,9 @@ class ComplexVector
 	*/
 
 	// Special values
+	// - All zeros
 	void zeros() {
-		data_.assign( data_.size(), 0.0 );
+		fill(0.0);
 	}
 	void zero() {
 		zero();
@@ -165,22 +186,26 @@ class ComplexVector
 	//------------------------------------//
 
 	// Access real/imag components of elements
-	T&       real(const size_type i)       { return data_[2*i];   }
-	T&       imag(const size_type i)       { return data_[2*i+1]; }
-	const T& real(const size_type i) const { return data_[2*i];   }
-	const T& imag(const size_type i) const { return data_[2*i+1]; }
+	T&       real(const size_type i, const size_type n)       { return data_[n].real(i); }
+	T&       imag(const size_type i, const size_type n)       { return data_[n].imag(i); }
+	const T& real(const size_type i, const size_type n) const { return data_[n].real(i); }
+	const T& imag(const size_type i, const size_type n) const { return data_[n].imag(i); }
 
 	// Object that represents a reference to the 'i'th element of
-	// a ComplexVector, in the sense of 'vec[i]'
+	// a ComplexArrayVector, in the sense of 'vec[i]'
 	// - TODO: Rebinding/copying/moving/swap?
-	//   - Goal: make ComplexVector compatible with STL algorithms
+	//   - Goal: make ComplexArrayVector compatible with STL algorithms
 	// - TODO: ElementConstRef?
 	class ElementRef {
 	 public:
-		ElementRef(ComplexVector& vec, const size_type i):
-			/*vec_(vec),*/ real_(vec.real(i)), imag_(vec.imag(i)) {}
+		ElementRef(ComplexArrayVector& vec, const size_type i):
+			vec_(vec), i_(i) 
+		{}
 
-		// Change the parent ComplexVector
+		/*
+		// TODO
+
+		// Change the parent ComplexArrayVector
 		ElementRef& operator=(const Complex& value) {
 			real_.get() = value.real();
 			imag_.get() = value.imag();
@@ -197,14 +222,16 @@ class ComplexVector
 		T&       imag()       { return imag_; }
 		const T& real() const { return real_; }
 		const T& imag() const { return imag_; }
+		*/
 
 	 private:
-		//std::reference_wrapper<ComplexVector> vec_;
-		std::reference_wrapper<T> real_, imag_;
+		std::reference_wrapper<ComplexArrayVector> vec_;
+		size_type i_;
 	};
 
 	// Element access
 	// - By reference (mutable): allows assignment via 'vec[i] = ...'
+	/*
 	ElementRef operator()(const size_type i) {
 		return ElementRef(*this, i);
 	}
@@ -218,12 +245,15 @@ class ComplexVector
 	Complex operator[](const size_type i) const {
 		return (*this)(i);
 	}
+	*/
 
 
 	//-----------------------//
 	//----- Data Access -----//
 	//-----------------------//
 
+	/*
+	TODO
 	// Access underlying block of memory by ptr
 	T*       data()       { return data_.data(); }
 	const T* data() const { return data_.data(); }
@@ -232,10 +262,9 @@ class ComplexVector
 	AlignedVector&       vector()       { return data_; }
 	const AlignedVector& vector() const { return data_; }
 
-	/*
 	// Output
 	template<typename U, typename V>
-	friend std::ostream& operator<<(std::ostream& os, const ComplexVector<U,V>& vec);
+	friend std::ostream& operator<<(std::ostream& os, const ComplexArrayVector<U,V>& vec);
 	*/
 
 
@@ -244,66 +273,63 @@ class ComplexVector
 	//----------------------//
 
 	// TODO: Template expressions?
-	ComplexVector operator+(const ComplexVector& other) {
-		ComplexVector output(size_);
-		simd::complex::add( this->data(), other.data(), size_, output.data() );
+	ComplexArrayVector operator+(const ComplexArrayVector& other) {
+		ComplexArrayVector output(other.size());
+		//simd::complex::add( this->data(), other.data(), size_, output.data() );
 		return output;
 	}
-	ComplexVector operator-(const ComplexVector& other) {
-		ComplexVector output(size_);
-		simd::complex::subtract( this->data(), other.data(), size_, output.data() );
+	ComplexArrayVector operator-(const ComplexArrayVector& other) {
+		ComplexArrayVector output(other.size());
+		//simd::complex::subtract( this->data(), other.data(), size_, output.data() );
 		return output;
 	}
-	ComplexVector operator*(const ComplexVector& other) {
-		ComplexVector output(size_);
-		simd::complex::multiply( this->data(), other.data(), size_, output.data() );
+	ComplexArrayVector operator*(const ComplexArrayVector& other) {
+		ComplexArrayVector output(other.size());
+		//simd::complex::multiply( this->data(), other.data(), size_, output.data() );
 		return output;
 	}
-	ComplexVector operator/(const ComplexVector& other) {
-		ComplexVector output(size_);
-		simd::complex::divide( this->data(), other.data(), size_, output.data() );
+	ComplexArrayVector operator/(const ComplexArrayVector& other) {
+		ComplexArrayVector output(other.size());
+		//simd::complex::divide( this->data(), other.data(), size_, output.data() );
 		return output;
 	}
 
-	ComplexVector& operator+=(const ComplexVector& other) {
+	ComplexArrayVector& operator+=(const ComplexArrayVector& other) {
 #ifndef NDEBUG
 		// TODO: General-purpose consistency checking
 		// - Check lengths
 		// - Variadic template for checking that none of a set of ptrs alias one another?
 		FANCY_ASSERT( this->data() != other.data(), "illegal aliasing" );
 #endif
-		simd::complex::add_in_place( other.data(), size_, this->data() );
+		//simd::complex::add_in_place( other.data(), size_, this->data() );
 		return *this;
 	}
-	ComplexVector& operator-=(const ComplexVector& other) {
-		simd::complex::subtract_in_place( other.data(), size_, this->data() );
+	ComplexArrayVector& operator-=(const ComplexArrayVector& other) {
+		//simd::complex::subtract_in_place( other.data(), size_, this->data() );
 		return *this;
 	}
-	/*
-	ComplexVector& operator*=(const ComplexVector& other) {
-		simd::real::multiply_in_place( other.data(), 2*size_, this->data() );
+	ComplexArrayVector& operator*=(const ComplexArrayVector& other) {
+		//simd::real::multiply_in_place( other.data(), 2*size_, this->data() );
 		return *this;
 	}
-	ComplexVector& operator/=(const ComplexVector& other) {
-		simd::real::divide_in_place( other.data(), 2*size_, this->data() );
+	ComplexArrayVector& operator/=(const ComplexArrayVector& other) {
+		//simd::real::divide_in_place( other.data(), 2*size_, this->data() );
 		return *this;
 	}
-	*/
 
 	// TODO: more operators
 
  private:
 	// Complex values are stored as sequential pairs.
-	// - Ex. for a ComplexVector with two complex-value entries, z1 and z1,
+	// - Ex. for a ComplexArrayVector with two complex-value entries, z1 and z1,
 	//     data_ = {{ Re(z1), Im(z1),
 	//                Re(z2), Im(z2) }}
-	AlignedVector data_;
-	size_type     size_ = 0;  // number of complex elements = data_.size()/2
+	std::array<AlignedComplexVector,N> data_;
 };
 
 
-template<typename T, typename AlignedVector = DefaultAlignedVector<T>>
-std::ostream& operator<<(std::ostream& os, const ComplexVector<T,AlignedVector>& vec)
+template<typename T, std::size_t N, typename AlignedComplexVector = DefaultAlignedComplexVector<T>>
+std::ostream& operator<<(std::ostream& os, const ComplexArrayVector<T,N,AlignedComplexVector>& vec)
 {
 	unsigned len = vec.size();
 	os << "[";
@@ -311,21 +337,11 @@ std::ostream& operator<<(std::ostream& os, const ComplexVector<T,AlignedVector>&
 		if ( i > 0 ) {
 			os << "\n ";
 		}
-		os << "(" << vec.real(i) << ", " << vec.imag(i) << ")";
-	}
-	os << "]\n";
-
-	/*
-	unsigned len = vec.data_.size();
-	os << "[";
-	for ( unsigned k=0; k<len; k+=2 ) {
-		if ( k > 0 ) {
-			os << "\n ";
+		for ( unsigned n=0; n<N; ++n ) {
+			os << "(" << vec.real(i,n) << ", " << vec.imag(i,n) << ")";
 		}
-		os << "(" << vec.data_[k] << ", " << vec.data_[k+1] << ")";
 	}
 	os << "]\n";
-	*/
 
 	return os;
 }
@@ -333,6 +349,6 @@ std::ostream& operator<<(std::ostream& os, const ComplexVector<T,AlignedVector>&
 } // end namespace aligned
 } // end namespace numeric
 
-#include "ComplexVectorKernels.h"
+//#include "ComplexArrayVectorKernels.h"
 
-#endif // ifndef COMPLEX_VECTOR_H
+#endif // ifndef COMPLEX_ARRAY_VECTOR_H

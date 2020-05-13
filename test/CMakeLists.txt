@@ -44,7 +44,7 @@ list(APPEND NUMERIC_TEST_NAMES "basic")
 list(APPEND NUMERIC_TEST_NAMES "compare_numbers")
 list(APPEND NUMERIC_TEST_NAMES "omp-simd/real")
 list(APPEND NUMERIC_TEST_NAMES "omp-simd/complex")
-list(APPEND NUMERIC_TEST_NAMES "omp-simd/complexN")
+list(APPEND NUMERIC_TEST_NAMES "omp-simd/complex_array")
 
 foreach(TEST_NAME IN LISTS NUMERIC_TEST_NAMES)
 	# TODO: move to function?

@@ -12,6 +12,7 @@
 #include "numeric/Array.h"
 #include "numeric/Assert.h"
 #include "numeric/CompareNumbers.h"
+#include "numeric/ComplexArrayVector.h"
 #include "numeric/ComplexVector.h"
 #include "numeric/Timer.h"
 

@@ -124,13 +124,15 @@ int main(int argc, char* argv[])
 	StdComplexNVector dv_old(len, dbeta);   ComplexNVector dv_new(len_TMP, beta);
 	StdComplexNVector doutput_old(len);     ComplexNVector doutput_new(len_TMP);
 
-	header = "TEST:  chain rule,  d(a*u) = da*u + a*du  ('a' real)";
+	header = "TEST:  chain rule,  d(alpha*u) = d(alpha)*u + alpha*du  ('alpha' complex)";
 
 	timer_old.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		for ( int i=0; i<len; ++i ) {
 			for ( int d=0; d<DIM; ++d ) {
-				doutput_old[i][d] = da[d]*u_old[i] + a*du_old[i][d];
+				doutput_old[i][d] = dalpha[d]*u_old[i] + alpha*du_old[i][d];
+				// 'a'
+				//doutput_old[i][d] = da[d]*u_old[i] + a*du_old[i][d];
 			}
 		}
 	}
@@ -153,15 +155,19 @@ int main(int argc, char* argv[])
 
 			int stride     = 2*DIM;  // number of Reals per ComplexN
 			int num_values = stride*len;  // (2*DIM)*len
-			#pragma omp simd aligned(du, doutput: CACHE_LINE_SIZE)
+			#pragma omp simd aligned(u, du, doutput: CACHE_LINE_SIZE)
 			for ( int i=0; i<len; ++i ) {
 				for ( int d=0; d<DIM; ++d ) {
 					int re_u = 2*i;
 					int im_u = re_u + 1;
 					int re = i*stride + 2*d;
 					int im = re + 1;
-					doutput[re] = da[d]*u[re_u] + a*du[re];
-					doutput[im] = da[d]*u[im_u] + a*du[im];
+					doutput[re] = (dalpha[d].real()*u[re_u] - dalpha[d].imag()*u[im_u]) + (alpha.real()*du[re] - alpha.imag()*du[im]);
+					doutput[im] = (dalpha[d].real()*u[im_u] + dalpha[d].imag()*u[re_u]) + (alpha.real()*du[im] + alpha.imag()*du[re]);
+
+					// 'a'
+					//doutput[re] = da[d]*u[re_u] + a*du[re];
+					//doutput[im] = da[d]*u[im_u] + a*du[im];
 				}
 			}
 		}
@@ -186,10 +192,30 @@ int main(int argc, char* argv[])
 			for ( int d=0; d<DIM; ++d ) {
 				const Real* du       = du_new[d].data();       // ComplexVector
 				Real*       doutput  = doutput_new[d].data();  // ComplexVector
+
+				const Real alpha_re  = alpha.real();
+				const Real alpha_im  = alpha.imag();
+				const Real dalpha_re = dalpha[d].real();
+				const Real dalpha_im = dalpha[d].imag();
+
+				//int im;
+				#pragma omp simd aligned(u, du, doutput: CACHE_LINE_SIZE) //private(im)
+				for ( int re=0; re<num_values; re+=2 ) {
+					int im = re + 1;
+					doutput[re] = (dalpha_re*u[re] - dalpha_im*u[im]) + (alpha_re*du[re] - alpha_im*du[im]);
+					doutput[im] = (dalpha_re*u[im] + dalpha_im*u[re]) + (alpha_re*du[im] + alpha_im*du[re]);
+					//doutput[re] = (dalpha[d].real()*u[re] - dalpha[d].imag()*u[im]) + (alpha.real()*du[re] - alpha.imag()*du[im]);
+					//doutput[im] = (dalpha[d].real()*u[im] + dalpha[d].imag()*u[re]) + (alpha.real()*du[im] + alpha.imag()*du[re]);
+				}
+				/*
+				// 'a'
+				const Real* du       = du_new[d].data();       // ComplexVector
+				Real*       doutput  = doutput_new[d].data();  // ComplexVector
 				#pragma omp simd aligned(du, doutput: CACHE_LINE_SIZE)
 				for ( int k=0; k<num_values; ++k ) {
 					doutput[k] = da[d]*u[k] + a*du[k];
 				}
+				*/
 			}
 		}
 		timer_new.stop();
