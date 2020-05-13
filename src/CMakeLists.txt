@@ -2,7 +2,7 @@
 
 add_subdirectory(numeric)
 add_subdirectory(omp-simd)
-add_subdirectory(alt-simd)
+#add_subdirectory(alt-simd)
 
 
 ### Driver ###

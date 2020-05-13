@@ -30,19 +30,31 @@ void add(
 	T* CXX_RESTRICT output_re, T* CXX_RESTRICT output_im
 )
 {
-	#pragma omp simd aligned(u_re, u_im, v_re, v_im, output_re, output_im: CACHE_LINE_SIZE)
+	#pragma omp simd aligned(u_re, v_re, output_re: CACHE_LINE_SIZE)
 	for ( int i=0; i<size; ++i ) {
 		output_re[i] = u_re[i] + v_re[i];
+	}
+	#pragma omp simd aligned(u_im, v_im, output_im: CACHE_LINE_SIZE)
+	for ( int i=0; i<size; ++i ) {
 		output_im[i] = u_im[i] + v_im[i];
 	}
 }
 
 // output = u - v
 template<typename T> inline
-void subtract(const T* CXX_RESTRICT u, const T* CXX_RESTRICT v, const int size, T* CXX_RESTRICT output)
+void subtract(
+	const T* CXX_RESTRICT u_re, const T* CXX_RESTRICT u_im, const T* CXX_RESTRICT v_re, const T* CXX_RESTRICT v_im, const int size,
+	T* CXX_RESTRICT output_re, T* CXX_RESTRICT output_im
+)
 {
-	// TODO
-	//simd::real::subtract(u, v, 2*size, output);
+	#pragma omp simd aligned(u_re, v_re, output_re: CACHE_LINE_SIZE)
+	for ( int i=0; i<size; ++i ) {
+		output_re[i] = u_re[i] - v_re[i];
+	}
+	#pragma omp simd aligned(u_im, v_im, output_im: CACHE_LINE_SIZE)
+	for ( int i=0; i<size; ++i ) {
+		output_im[i] = u_im[i] - v_im[i];
+	}
 }
 
 // output = u * v (element-wise)

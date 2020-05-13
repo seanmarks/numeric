@@ -45,7 +45,7 @@ template<typename T> inline
 void multiply(const T* CXX_RESTRICT u, const T* CXX_RESTRICT v, const int size, T* CXX_RESTRICT output)
 {
 	const int num_values = 2*size;
-	int im = 1;
+	int im;
 	#pragma omp simd aligned(u, v, output: CACHE_LINE_SIZE) private(im)
 	for ( int re=0; re<num_values; re+=2 ) {
 		im = re + 1; 
@@ -103,6 +103,22 @@ void left_multiply_in_place(const T alpha_re, const T alpha_im, const int size, 
 		im = re + 1; 
 		tmp_re     = alpha_re*output[re] - alpha_im*output[im];
 		output[im] = alpha_re*output[im] + alpha_im*output[re];
+		output[re] = tmp_re;
+	}
+}
+
+// output = alpha*output
+template<typename T> inline
+void right_multiply_in_place(const T alpha_re, const T alpha_im, const int size, T* CXX_RESTRICT output)
+{
+	const int num_values = 2*size;
+	int im = 1;
+	T   tmp_re;
+	#pragma omp simd aligned(output: CACHE_LINE_SIZE) private(im, tmp_re)
+	for ( int re=0; re<num_values; re+=2 ) {
+		im = re + 1; 
+		tmp_re     = output[re]*alpha_re - output[im]*alpha_im;
+		output[im] = output[re]*alpha_im + output[im]*alpha_re;
 		output[re] = tmp_re;
 	}
 }

@@ -70,8 +70,9 @@ class ComplexVector
 		assign(size, value);
 	}
 
-	// TODO require OtherComplexVector::value_type convertible to std::complex<T>?
-	template<typename OtherComplexVector>
+	template<typename OtherComplexVector,
+	         typename std::enable_if< std::is_convertible<typename OtherComplexVector::value_type, Complex>::value >::type* = nullptr
+	>
 	ComplexVector(const OtherComplexVector& vec) {
 		unsigned len = vec.size();
 		resize(len);
