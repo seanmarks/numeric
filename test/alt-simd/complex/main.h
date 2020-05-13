@@ -8,11 +8,11 @@
 #include <iostream>
 #include <vector>
 
-#include "numeric/Aligned.h"
-#include "numeric/Assert.h"
-#include "numeric/CompareNumbers.h"
-#include "numeric/ComplexVector.h"
-#include "numeric/Timer.h"
+#include "alt-simd/Aligned.h"
+#include "alt-simd/Assert.h"
+#include "alt-simd/CompareNumbers.h"
+#include "alt-simd/ComplexVector.h"
+#include "alt-simd/Timer.h"
 
 void comparePerformance(std::string header, const double rmsd, const Timer& timer_new, const Timer& timer_old)
 {

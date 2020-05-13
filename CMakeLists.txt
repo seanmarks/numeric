@@ -38,8 +38,9 @@ set(GPTL_DIR "${HOME}/programs/gptl" CACHE STRING "Location of GPTL installation
 option(OPENMP_ENABLED "Enable OpenMP" OFF)
 
 # Output names
-set(LIB_NUMERIC    "libnumeric"      CACHE STRING "Name of the library to be created")
-set(LIB_OMP_SIMD   "libompsimd"      CACHE STRING "Name of the library to be created")
+set(LIB_NUMERIC   "libnumeric"  CACHE STRING "Name of the library to be created")
+set(LIB_OMP_SIMD  "libompsimd"  CACHE STRING "Name of the library to be created")
+set(LIB_ALT_SIMD  "libaltsimd"  CACHE STRING "Name of the library to be created")
 
 #set(NUMERIC_DRIVER "${PROJECT_NAME}" CACHE STRING "Name of the executable")
 

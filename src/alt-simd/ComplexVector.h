@@ -90,7 +90,7 @@ class ComplexVector
 		return real_.size();
 	}
 	void resize(const size_type size) {
-		if ( size() != size ) {
+		if ( this->size() != size ) {
 			real_.resize(size);
 			imag_.resize(size);
 		}
@@ -132,7 +132,7 @@ class ComplexVector
 	// Set value
 	template<typename U>
 	void fill(const U& value) {
-		assign(size_, value);
+		assign(size(), value);
 	}
 	/*
 	// TODO overload for particular types/initializer lists?
@@ -301,7 +301,7 @@ std::ostream& operator<<(std::ostream& os, const ComplexVector<T,AlignedVector>&
 	unsigned len = vec.size();
 	os << "[";
 	for ( unsigned i=0; i<len; ++i ) {
-		if ( k > 0 ) {
+		if ( i > 0 ) {
 			os << "\n ";
 		}
 		os << "(" << vec.real(i) << ", " << vec.imag(i) << ")";

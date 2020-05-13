@@ -151,11 +151,12 @@ int main(int argc, char* argv[])
 		}
 	}
 	timer_old.stop();
-	std::cout << "  u_old[0] = " << u_old[0]          << std::endl;
+	std::cout << "  u_old[0] = " << u_old[0] << std::endl;
 
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		aligned::simd::complex::add(u_new.data(), v_new.data(), len, output_new.data());
+		aligned::simd::complex::add( u_new.real_data(), u_new.imag_data(), v_new.real_data(), v_new.imag_data(),
+		                             len, output_new.real_data(), output_new.imag_data() );
 	}
 	timer_new.stop();
 	std::cout << "  u_new[0] = " << Complex(u_new[0]) << std::endl;
@@ -177,7 +178,8 @@ int main(int argc, char* argv[])
 
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		aligned::simd::complex::multiply(u_new.data(), v_new.data(), len, output_new.data());
+		aligned::simd::complex::multiply( u_new.real_data(), u_new.imag_data(), v_new.real_data(), v_new.imag_data(),
+		                                  len, output_new.real_data(), output_new.imag_data() );
 	}
 	timer_new.stop();
 	std::cout << "  output_new[0] = " << Complex(output_new[0]) << std::endl;
@@ -185,7 +187,7 @@ int main(int argc, char* argv[])
 	check(output_new, output_old);
 	comparePerformance(header, rmsd(output_new, output_old), timer_new, timer_old);
 
-
+	/*
 	header = "Div:  output = u * v  (element-wise)";
 
 	timer_old.start();
@@ -206,11 +208,12 @@ int main(int argc, char* argv[])
 
 	check(output_new, output_old);
 	comparePerformance(header, rmsd(output_new, output_old), timer_new, timer_old);
+	*/
 
 
 	std::cout << "//----- Vector <op> Scalar (in-place) -----//" << std::endl;
 
-
+	/*
 	header = "Mul:  output = alpha*output  (element-wise)";
 
 	output_old.assign(len, alpha);
@@ -233,6 +236,7 @@ int main(int argc, char* argv[])
 
 	check(output_new, output_old);
 	comparePerformance(header, rmsd(output_new, output_old), timer_new, timer_old);
+	*/
 
 	return 0;
 }
