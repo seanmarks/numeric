@@ -45,15 +45,13 @@ list(APPEND NUMERIC_TEST_NAMES "compare_numbers")
 list(APPEND NUMERIC_TEST_NAMES "omp-simd/real")
 list(APPEND NUMERIC_TEST_NAMES "omp-simd/complex")
 list(APPEND NUMERIC_TEST_NAMES "omp-simd/complex_array")
+list(APPEND NUMERIC_TEST_NAMES "vector_of_vectors")
 
 foreach(TEST_NAME IN LISTS NUMERIC_TEST_NAMES)
-	# TODO: move to function?
-
 	# To ensure that each binary has a different name, they are generated from the
 	# corresponding subdirectory name
 	string(REPLACE "/" "-" TEST_PROGRAM ${TEST_NAME})
 	set(TEST_PROGRAM "test_${TEST_PROGRAM}")
-	message("TEST_PROGRAM = ${TEST_PROGRAM}")  # FIXME DEBUG
 
 	# Build the test driver
 	set(TEST_DIR ${ROOT_TEST_DIR}/${TEST_NAME})   # directory with source files for this test
@@ -90,43 +88,42 @@ foreach(TEST_NAME IN LISTS NUMERIC_TEST_NAMES)
 endforeach()
 
 
+##### SCRAPS #####
+
+
 ### LIB_OMP_SIMD ###
 
-# Tests are differentiated by their directories
-set(OMP_SIMD_TEST_NAMES "")
-list(APPEND OMP_SIMD_TEST_NAMES "old-omp-simd")
-
-foreach(TEST_NAME IN LISTS OMP_SIMD_TEST_NAMES)
-	# TODO: move to function?
-
-	# To ensure that each binary has a different name, they are generated from the
-	# corresponding subdirectory name
-	string(REPLACE "/" "-" TEST_PROGRAM ${TEST_NAME})
-	set(TEST_PROGRAM "test_${TEST_PROGRAM}")
-	message("TEST_PROGRAM = ${TEST_PROGRAM}")  # FIXME DEBUG
-
-	# Build the test driver
-	set(TEST_DIR ${ROOT_TEST_DIR}/${TEST_NAME})   # directory with source files for this test
-	set(TEST_BIN ${ROOT_TEST_BIN}/${TEST_NAME})   # where to build this testing binary
-	file(GLOB_RECURSE TEST_SRC "${TEST_DIR}/*.cpp" "${TEST_DIR}/*.h")
-	add_executable(${TEST_PROGRAM} EXCLUDE_FROM_ALL ${TEST_SRC})
-	set_target_properties(${TEST_PROGRAM}
-												PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_BIN}
-												)
-	target_link_libraries(${TEST_PROGRAM} PUBLIC ${LIB_OMP_SIMD})
-	target_include_directories(${TEST_PROGRAM} PUBLIC ${CMAKE_SOURCE_DIR}/src)
-
-	# Register test driver
-	add_dependencies(build_tests ${TEST_PROGRAM})
-
-	# Generate the test
-	# - TODO: auto-update test program whenever it is called by 'ctest'
-	#   - Using fixtures?
-	add_test(NAME ${TEST_NAME}
-					 WORKING_DIRECTORY ${TEST_BIN}
-					 COMMAND ${TEST_PROGRAM}
-					 )
-endforeach()
+## Tests are differentiated by their directories
+#set(OMP_SIMD_TEST_NAMES "")
+#list(APPEND OMP_SIMD_TEST_NAMES "old-omp-simd")
+#
+#foreach(TEST_NAME IN LISTS OMP_SIMD_TEST_NAMES)
+#
+#	# To ensure that each binary has a different name, they are generated from the
+#	# corresponding subdirectory name
+#	string(REPLACE "/" "-" TEST_PROGRAM ${TEST_NAME})
+#	set(TEST_PROGRAM "test_${TEST_PROGRAM}")
+#
+#	# Build the test driver
+#	set(TEST_DIR ${ROOT_TEST_DIR}/${TEST_NAME})   # directory with source files for this test
+#	set(TEST_BIN ${ROOT_TEST_BIN}/${TEST_NAME})   # where to build this testing binary
+#	file(GLOB_RECURSE TEST_SRC "${TEST_DIR}/*.cpp" "${TEST_DIR}/*.h")
+#	add_executable(${TEST_PROGRAM} EXCLUDE_FROM_ALL ${TEST_SRC})
+#	set_target_properties(${TEST_PROGRAM}
+#												PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_BIN}
+#												)
+#	target_link_libraries(${TEST_PROGRAM} PUBLIC ${LIB_OMP_SIMD})
+#	target_include_directories(${TEST_PROGRAM} PUBLIC ${CMAKE_SOURCE_DIR}/src)
+#
+#	# Register test driver
+#	add_dependencies(build_tests ${TEST_PROGRAM})
+#
+#	# Generate the test
+#	add_test(NAME ${TEST_NAME}
+#					 WORKING_DIRECTORY ${TEST_BIN}
+#					 COMMAND ${TEST_PROGRAM}
+#					 )
+#endforeach()
 
 
 ### LIB_ALT_SIMD ###
@@ -137,13 +134,11 @@ endforeach()
 ##list(APPEND ALT_SIMD_TEST_NAMES "alt-simd")
 #
 #foreach(TEST_NAME IN LISTS ALT_SIMD_TEST_NAMES)
-#	# TODO: move to function?
 #
 #	# To ensure that each binary has a different name, they are generated from the
 #	# corresponding subdirectory name
 #	string(REPLACE "/" "-" TEST_PROGRAM ${TEST_NAME})
 #	set(TEST_PROGRAM "test_${TEST_PROGRAM}")
-#	message("TEST_PROGRAM = ${TEST_PROGRAM}")  # FIXME DEBUG
 #
 #	# Build the test driver
 #	set(TEST_DIR ${ROOT_TEST_DIR}/${TEST_NAME})   # directory with source files for this test
@@ -160,8 +155,6 @@ endforeach()
 #	add_dependencies(build_tests ${TEST_PROGRAM})
 #
 #	# Generate the test
-#	# - TODO: auto-update test program whenever it is called by 'ctest'
-#	#   - Using fixtures?
 #	add_test(NAME ${TEST_NAME}
 #					 WORKING_DIRECTORY ${TEST_BIN}
 #					 COMMAND ${TEST_PROGRAM}
