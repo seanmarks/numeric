@@ -2,9 +2,8 @@
  * - Vector of subvectors with varying lengths
  *   - Implemented in linear storage
  *
- * TODO:
- * - Check for negative capacity request
- *   - Could just impose size_type everywhere instead of int/unsigned
+ * - TODO:
+ *   - Move implementations out of class body for readability
  */
 
 #pragma once
@@ -56,13 +55,13 @@ class VectorOfVectors
 	// Initialize with specified subvector capacities
 	// - Optionally, also specify the minimum total capacity the object should have
 	// - Will allocate more memory than the minimum
-	VectorOfVectors(const size_type size, const std::vector<size_type>& capacities, const size_type total_capacity = 0) {
-		assignEmptyWithCapacities(size, capacities, total_capacity);
+	VectorOfVectors(const std::vector<size_type>& capacities, const size_type total_capacity = 0) {
+		assignEmptyWithCapacities(capacities, total_capacity);
 	}
 
 	// Initialize with uniform subvector capacity
 	VectorOfVectors(const size_type size, const size_type subvec_capacity): 
-		VectorOfVectors(size, std::vector<size_type>(size, subvec_capacity))
+		VectorOfVectors(std::vector<size_type>(size, subvec_capacity))
 	{}
 
 	// Current sizes
@@ -148,15 +147,12 @@ class VectorOfVectors
 		FANCY_ASSERT(i < size(), "out of bounds (i=" << i << ", size=" << size() << ")" );
 #endif
 		size_type current_capacity = capacity(i);
-		std::cout << "DEBUG: resize(i): i=" << i << ": new size = " << new_size << std::endl;  // FIXME DEBUG
 		if ( new_size <= current_capacity ) {
-			std::cout << "DEBUG: A" << std::endl;  // FIXME DEBUG
 			subvec_ends_[i] = subvec_begins_[i] + new_size;
 			return;
 		}
 		else {
 			size_type new_capacity = calculateNewSubvectorCapacity( new_size );
-			std::cout << "DEBUG: B:  new_capacity = " << new_capacity << std::endl;  // FIXME DEBUG
 			extendCapacity(i, new_capacity);
 			subvec_ends_[i] = subvec_begins_[i] + new_size;
 			return;
@@ -165,7 +161,6 @@ class VectorOfVectors
 
 	// Extend the capacity of the 'i'th subvector to be at least 'new_capacity'
 	void extendCapacity(const size_type i, const size_type new_capacity) {
-		std::cout << "DEBUG: extendCapacity(): i=" << i << ": new capacity = " << new_capacity << std::endl;  // FIXME DEBUG
 
 		size_type old_capacity = capacity(i);
 		if ( new_capacity <= old_capacity ) {
@@ -173,8 +168,6 @@ class VectorOfVectors
 		}
 
 		size_type extra_capacity_needed = new_capacity - old_capacity;  // non-negative
-
-		std::cout << "DEBUG:   old = " << old_capacity << ", need " << extra_capacity_needed << "\n";  // FIXME DEBUG
 
 		size_type outer_size = size();
 		if ( i+1 == outer_size ) {
@@ -188,7 +181,6 @@ class VectorOfVectors
 			return;
 		}
 		else {
-			std::cout << "DEBUG:  B" << std::endl;
 			// Insert capacity at the end of the subvector
 			auto pos = data_.begin() + subvec_alloc_ends_[i];
 			data_.insert( pos, extra_capacity_needed, T() );
@@ -256,7 +248,7 @@ class VectorOfVectors
 			}
 		}
 		if ( need_realloc ) {
-			this->reallocate(new_size, capacities);
+			this->reallocate(capacities);
 			return;
 		}
 
@@ -275,7 +267,7 @@ class VectorOfVectors
 				}
 			}
 			else {
-				this->reallocate(new_size, capacities);
+				this->reallocate(capacities);
 				return;
 			}
 		}
@@ -287,12 +279,45 @@ class VectorOfVectors
 		}
 	}
 
+	// Reset the contents of subvector 'i'
+	void reset(const size_type i) {
+		subvec_ends_[i] = subvec_begins_[i];
+	}
+	void clear(const size_type i) {
+		reset(i);
+	}
+
+	// Reset all subvectors
+	void reset() {
+		const size_type len = size();
+		for ( size_type i=0; i<len; ++i ) {
+			reset(i);
+		}
+	}
+
 	// Nuke the contents
 	void clear() {
 		data_.clear();
 		subvec_begins_.clear();
 		subvec_ends_.clear();
 		subvec_alloc_ends_.clear();
+	}
+
+
+	//----- Tuning parameters -----//
+
+	void setDefaultSubvectorCapacity(const size_type capacity) {
+		default_subvec_capacity_ = capacity;
+	}
+
+	void setOverallGrowthFactor(const double fac) {
+		FANCY_ASSERT(data_growth_factor_ >= 1.0, "invalid value");
+		data_growth_factor_ = fac;
+	}
+
+	void setSubvectorGrowthFactor(const double fac) {
+		FANCY_ASSERT(subvec_growth_factor_ >= 1.0, "invalid value");
+		subvec_growth_factor_ = fac;
 	}
 
 
@@ -308,10 +333,11 @@ class VectorOfVectors
  protected:
 	// Assigns the outer vector a new size and clears the inner vectors, ensuring that each
 	// subvector has the specified minimum capacity
+	// - Outer size is inferred from 'capacities.size()'
 	// - Optionally, also enforces a minimum total capacity
 	// - All stored data is lost!
-	void assignEmptyWithCapacities(const size_type size, const std::vector<size_type>& capacities, const size_type total_capacity = 0) {
-		FANCY_ASSERT(size == capacities.size(), "inconsistent input");
+	void assignEmptyWithCapacities(const std::vector<size_type>& capacities, const size_type total_capacity = 0) {
+		const size_type size = capacities.size();
 		if ( size == 0 ) {
 			clear();
 			return;
@@ -336,9 +362,10 @@ class VectorOfVectors
 	// - Moves all data to a new object that satisfies the specified minimum capacities
 	// - The new total capacity must also be at least as large as the old total capacity
 	// - TODO: apply subvector capacity growth here?
-	void reallocate(const size_type new_size, std::vector<size_type> capacities) {
+	void reallocate(std::vector<size_type> capacities) {
 		// Ensure that no data is lost in existing subvectors that are larger than
 		// the minimum requested
+		size_type new_size = capacities.size();
 		size_type old_size = this->size();
 		size_type i_max = std::min(old_size, new_size);
 		for ( size_type i=0; i<i_max; ++i ) {
@@ -346,7 +373,7 @@ class VectorOfVectors
 		}
 
 		// Move data to a new object of the appropriate dimensions
-		VectorOfVectors new_obj(new_size, capacities, this->capacity());
+		VectorOfVectors new_obj(capacities, this->capacity());
 		for ( size_type i=0; i<i_max; ++i ) {
 			size_type first = this->subvec_begins_[i];
 			size_type last  = this->subvec_ends_[i];
@@ -454,6 +481,14 @@ template<typename T, typename Vector>
 void VectorOfVectors<T,Vector>::checkInternalConsistency() const
 {
 	size_type outer_size = this->size();
+	FANCY_ASSERT( subvec_begins_.size()     == outer_size, "bad size" );
+	FANCY_ASSERT( subvec_ends_.size()       == outer_size, "bad size" );
+	FANCY_ASSERT( subvec_alloc_ends_.size() == outer_size, "bad size" );
+
+	if ( outer_size > 0 ) {
+		subvec_alloc_ends_.back() <= capacity();
+	}
+
 	for ( size_type i=0; i<outer_size; ++i ) {
 		FANCY_ASSERT( subvec_begins_[i] <= subvec_ends_[i], "bad range" );
 		FANCY_ASSERT( subvec_ends_[i] <= subvec_alloc_ends_[i], "bad range" );
