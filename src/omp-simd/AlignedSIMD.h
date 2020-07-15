@@ -1,4 +1,5 @@
 // SIMD kernels and helper functions
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 // - Uses OpenMP SIMD
 // - Functions generally assume cache-aligned data
 

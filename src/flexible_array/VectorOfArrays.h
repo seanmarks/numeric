@@ -1,3 +1,4 @@
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 #pragma once
 #ifndef VECTOR_OF_ARRAYS_H

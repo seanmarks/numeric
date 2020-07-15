@@ -1,21 +1,23 @@
-/* Aligned dynamic memory allocation
- * - Provides general, C-style wrappers around system-specified functions that 
- *   allocate/deallocate aligned memory
- * - Also provides a std::allocator-style object that can be used with other
- *   C++ objects in the STL, such as std::vector
- *
- * - The code here is based on the folloing prior works
- *   - 'Mallocator', by Stephen T. Lavavej
- *      - Original: TODO
- *      - Updated: slides presented at CppCon 2014 
- *        (under https://github.com/CppCon/CppCon2014/blob/master/Presentations)
- * 
- *   - 'Aligned', by Nick Strupat
- *     - GitHub: https://github.com/NickStrupat/Aligned
- *
- * - Misc. notes
- *   - 'construct()' and 'destruct()' are not implemented, as they are redundant in C++11
- */
+// Aligned dynamic memory allocation
+// - AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
+// - Provides general, C-style wrappers around system-specified functions that 
+//   allocate/deallocate aligned memory
+// - Also provides a std::allocator-style object that can be used with other
+//   C++ objects in the STL, such as std::vector
+//
+// - The code here is based on the folloing prior works
+//   - 'Mallocator', by Stephen T. Lavavej
+//      - Original: TODO
+//      - Updated: slides presented at CppCon 2014 
+//        (under https://github.com/CppCon/CppCon2014/blob/master/Presentations)
+// 
+//   - 'Aligned', by Nick Strupat
+//     - GitHub: https://github.com/NickStrupat/Aligned
+//
+// - Misc. notes
+//   - 'construct()' and 'destruct()' are not implemented, as they are redundant in C++11
+//
 
 #pragma once
 #ifndef ALIGNED_ALLOCATOR_H

@@ -1,3 +1,5 @@
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+
 #include "Random.h"
 
 namespace Random

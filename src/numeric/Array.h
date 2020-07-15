@@ -1,3 +1,5 @@
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+
 #ifndef NUMERIC_ARRAY_H
 #define NUMERIC_ARRAY_H
 

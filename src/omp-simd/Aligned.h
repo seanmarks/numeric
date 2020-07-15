@@ -1,4 +1,6 @@
 // Aligned.h - aligned dynamic memory allocation
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
 // - Provides general, C-style wrappers around system-specified functions that 
 //   allocate/deallocate aligned memory
 // - Also provides a std::allocator-style object that can be used with other

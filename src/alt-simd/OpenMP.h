@@ -1,4 +1,5 @@
 // OpenMP - static wrappers for OpenMP functions
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 #pragma once
 #ifndef OPEN_MP_H

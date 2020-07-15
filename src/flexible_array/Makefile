@@ -1,3 +1,4 @@
+# AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 CXX := g++
 

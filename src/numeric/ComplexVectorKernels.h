@@ -1,8 +1,9 @@
-/*
- * TODO: convenience wrappers around low-level SIMD functions
- *
- * !!! Don't include this file directly !!!
- */
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
+// TODO: convenience wrappers around low-level SIMD functions
+//
+// !!! Don't include this file directly !!!
+//
 
 #pragma once
 #ifndef COMPLEX_VECTOR_KERNELS_H

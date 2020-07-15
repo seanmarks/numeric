@@ -1,5 +1,7 @@
 ### LIB_OMP_SIMD ###
 
+# AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+
 # Builds main library: ${LIB_OMP_SIMD}
 
 # Locate source files

@@ -1,11 +1,11 @@
-/*
- * SIMD kernels and helper functions for complex vectors
- * - Use OpenMP SIMD
- * - Assume cache-aligned data
- * - Complex vectors have the following layout
- *   - size       = length of complex vectors = number of complex values of the form a+ib
- *   - num_values = 2*size = total number of real numbers required to represent it
- */
+// SIMD kernels and helper functions for complex vectors
+// - Use OpenMP SIMD
+// - Assume cache-aligned data
+// - Complex vectors have the following layout
+//   - size       = length of complex vectors = number of complex values of the form a+ib
+//   - num_values = 2*size = total number of real numbers required to represent it
+//
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 
 #pragma once

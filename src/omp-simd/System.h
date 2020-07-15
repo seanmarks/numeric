@@ -1,4 +1,5 @@
 // System - functions and static wrappers for querying system info
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 #pragma once
 #ifndef SYSTEM_H

@@ -1,4 +1,5 @@
 // Random: namespace with helper routines for dealing with random numbers
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 #ifndef RANDOM_H
 #define RANDOM_H

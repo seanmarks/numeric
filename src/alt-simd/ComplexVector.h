@@ -1,7 +1,7 @@
-/*
- * SIMD-friendly complex vector
- * - Stores real and imaginary components separately
- */
+// SIMD-friendly complex vector
+// - Stores real and imaginary components separately
+//
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 #pragma once
 #ifndef COMPLEX_VECTOR_H

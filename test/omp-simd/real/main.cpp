@@ -1,3 +1,5 @@
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+
 #include "main.h"
 
 int main(int argc, char* argv[])

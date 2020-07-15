@@ -1,10 +1,11 @@
-/* 
- * Adapted from code written by Bruce Dawson
- * (https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition)
- * 
- * Key facts to note:
- * - 
- */
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
+// Adapted from code written by Bruce Dawson
+// (https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition)
+// 
+// Key facts to note:
+// - 
+//
 
 #include <cmath>
 #include <cstdint>

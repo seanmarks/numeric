@@ -1,4 +1,5 @@
 // SIMD-friendly vector of complex-valued arrays (of fixed length)
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 //
 // - Note: operators that return a VectorComplexN rely on copy elision
 //   (NRVO) for performance

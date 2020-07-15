@@ -1,4 +1,6 @@
 ### LIB_NUMERIC ###
+#
+# AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 # Builds main library: ${LIB_NUMERIC}
 
@@ -29,14 +31,3 @@ endif()
 
 # Where the libraries should be installed
 install(TARGETS ${LIB_NUMERIC} DESTINATION lib)
-
-
-
-#function(targetLinkLibraryPreferStatic TARGET SCOPE LIBNAME)
-#	if(LIB_${LIBNAME}_STATIC)
-#		target_link_libraries(${TARGET} ${SCOPE} ${LIB_${LIBNAME}_STATIC})
-#	else()
-#		target_link_libraries(${TARGET} ${SCOPE} ${LIB_${LIBNAME}})
-#		target_link_directories(${TARGET} ${SCOPE} "${${LIBNAME}_DIR}/lib")
-#	endif()
-#endfunction()

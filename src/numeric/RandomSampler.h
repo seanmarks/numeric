@@ -1,6 +1,8 @@
 // RandomSampler
 // - Use to generate a set of random numbers quickly
 //
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
 // TODO 
 // - Default constructor
 //   - Use a random sequence from Random

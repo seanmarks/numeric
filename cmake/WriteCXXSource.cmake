@@ -1,3 +1,5 @@
+# AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+
 # Based on helper function '_OPENMP_WRITE_SOURCE_FILE' in FindOpenMP.cmake (from CMake 3.15)
 # - Input:
 #     SRC_FILE_CONTENT_VAR - contains a string with the C++ source to write

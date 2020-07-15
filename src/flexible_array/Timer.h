@@ -1,4 +1,5 @@
 // Simple timer class that uses std::chrono
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 #pragma once
 #ifndef TIMER_H

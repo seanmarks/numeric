@@ -1,3 +1,5 @@
+# AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+
 function(findHomebrewOpenMP)
 	# Look for Homebrew
 	find_program(HOMEBREW_PROGRAM brew)

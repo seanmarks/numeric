@@ -1,4 +1,5 @@
 // SIMD-friendly complex vector
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 //
 // - Note: operators that return a ComplexVector rely on copy elision
 //   (NRVO) for performance

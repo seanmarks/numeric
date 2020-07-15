@@ -1,10 +1,11 @@
-/* VectorOfVectors
- * - Vector of subvectors with varying lengths
- *   - Implemented in linear storage
- *
- * - TODO:
- *   - Move implementations out of class body for readability
- */
+// VectorOfVectors
+// - Vector of subvectors with varying lengths
+//   - Implemented in linear storage
+//
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
+// - TODO:
+//   - Move implementations out of class body for readability
 
 #pragma once
 #ifndef VECTOR_OF_VECTORS_H

@@ -1,4 +1,5 @@
 // Miscellaneous macros and constexpr functions
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 #ifndef UTILS_H
 #define UTILS_H

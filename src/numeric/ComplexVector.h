@@ -1,8 +1,7 @@
-/*
- * SIMD-friendly complex vector 
- * - Emulates std::vector<std::complex<T>>
- *
-*/
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
+// SIMD-friendly complex vector 
+// - Emulates std::vector<std::complex<T>>
 
 #pragma once
 #ifndef COMPLEX_VECTOR_H

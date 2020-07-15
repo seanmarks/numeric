@@ -1,3 +1,4 @@
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 #include <cstddef>
 #include <iostream>

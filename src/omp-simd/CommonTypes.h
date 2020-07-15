@@ -1,8 +1,9 @@
-/* CommonTypes
- *
- * Namespace with commonly-used types
- *
- */
+// CommonTypes
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
+// Namespace with commonly-used types
+//
+//
 
 #ifndef COMMON_TYPES_H
 #define COMMON_TYPES_H

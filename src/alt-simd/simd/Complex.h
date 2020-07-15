@@ -1,8 +1,8 @@
-/*
- * SIMD kernels and helper functions for complex vectors
- * - Use OpenMP SIMD
- * - Assume cache-aligned data
- */
+// SIMD kernels and helper functions for complex vectors
+// - Use OpenMP SIMD
+// - Assume cache-aligned data
+//
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 
 #pragma once

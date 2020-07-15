@@ -1,9 +1,8 @@
-/*
- * SIMD-friendly vector of complex-valued arrays
- * - Emulates an N-dimensional complex vector:
- *     std::vector< std::array<std::complex<T>,N> >
- *
-*/
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
+// SIMD-friendly vector of complex-valued arrays
+// - Emulates an N-dimensional complex vector:
+//     std::vector< std::array<std::complex<T>,N> >
 
 #pragma once
 #ifndef COMPLEX_ARRAY_VECTOR_H

@@ -1,3 +1,4 @@
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 #include "System.h"
 
 // Implementations of System::get_cache_line_size(), adapted from code
