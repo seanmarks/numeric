@@ -1,11 +1,9 @@
+// Classes for comparing floating-point numbers
+//
 // AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 //
 // Adapted from code written by Bruce Dawson
 // (https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition)
-// 
-// Key facts to note:
-// - 
-//
 
 #include <cmath>
 #include <cstdint>
@@ -18,11 +16,27 @@ namespace numeric {
 // Type traits struct with a signed Int type of the same size (in bytes)
 // as floating-point type T
 template<typename T>
-struct FloatingPointNumberTraits;
+struct FloatingPointNumberTraits {};
+
+template<>
+struct FloatingPointNumberTraits<float>
+{
+	using Int = std::int32_t;
+	static_assert(sizeof(float) == sizeof(Int), "size mismatch");
+};
+
+template<>
+struct FloatingPointNumberTraits<double>
+{
+	using Int = std::int64_t;
+	static_assert(sizeof(double) == sizeof(Int), "size mismatch");
+};
 
 
 // Stores different representations a given floating-point number
 // - TODO: Store a dissection of the number (e.g. sign, mantissa, exponent)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"  // ignore warning about type punning (reinterpret_cast)
 template<typename T>
 class FloatingPointNumber
 {
@@ -32,7 +46,8 @@ class FloatingPointNumber
 
 	static_assert(std::is_floating_point<T>::value, "floating-point type required");
 	static_assert(std::is_integral<Int>::value,     "integral type required");
-	// TODO require (sizeof(T) == sizeof(Int)) and Int be signed
+	static_assert(std::is_signed<Int>::value,       "signed type required");
+	static_assert(sizeof(T) == sizeof(Int),         "inappropriate integer type");
 
 	FloatingPointNumber(const T value = 0.0):
 		value_(value),
@@ -40,8 +55,7 @@ class FloatingPointNumber
 	{}
 
 	bool is_negative() const {
-		// TODO: sign bit check?
-		return value_ < 0.0;
+		return value_ < 0.0;  // TODO: check sign bit instead?
 	}  
 	Int integer_rep() const {
 		return integer_rep_;
@@ -51,24 +65,11 @@ class FloatingPointNumber
 	T   value_;
 	Int integer_rep_;
 };
+#pragma GCC diagnostic pop
 
 
-template<>
-struct FloatingPointNumberTraits<float>
-{
-	using Int = std::int32_t;
-};
-
-template<>
-struct FloatingPointNumberTraits<double>
-{
-	using Int = std::int64_t;
-};
-
-using Float_t  = FloatingPointNumber<float>;
-using Double_t = FloatingPointNumber<double>;
-
-
+// Use to compare two floating-point numbers based on their respective
+// units of least precision (ULPs)
 template<typename T>
 class AlmostEqualUlps
 {
@@ -79,14 +80,16 @@ class AlmostEqualUlps
 	static_assert(std::is_floating_point<T>::value, "floating-point type required");
 	static_assert(std::is_integral<Int>::value,     "integral type required");
 
-	// TODO calibrate default max_diff
+	AlmostEqualUlps() {}
+
 	AlmostEqualUlps(
-		const T   max_diff      = /*std::sqrt(*/ std::numeric_limits<T>::epsilon() /*)*/,
-		const Int max_ulps_diff = 4
+		const T   max_diff,
+		const Int max_ulps_diff
 	):
 		max_diff_(max_diff), max_ulps_diff_(max_ulps_diff)
 	{}
 
+	// Parameter management
 	void setMaxUlpsDiff(const Int max_ulps_diff) {
 		max_ulps_diff_ = max_ulps_diff;
 	}
@@ -94,12 +97,9 @@ class AlmostEqualUlps
 		return max_ulps_diff_;
 	}
 
-	bool operator()(const T& a, const T& b) {
-		return are_almost_equal(a, b);
-	}
-
-	bool are_almost_equal(const T& a, const T& b) {
-		// Check if the numbers are really close -- needed when comparing numbers near zero.
+	// Returns true if 'a' and 'b' are almost equal
+	bool areAlmostEqual(const T& a, const T& b) {
+		// Check if the numbers are really close (needed when comparing numbers near zero)
 		T abs_diff = std::fabs(a - b);
 		if (abs_diff <= max_diff_) {
 			return true;
@@ -122,13 +122,19 @@ class AlmostEqualUlps
 		}
 	}
 
+	// Returns true if 'a' and 'b' are almost equal
+	bool operator()(const T& a, const T& b) {
+		return areAlmostEqual(a, b);
+	}
  private:
-	T   max_diff_;
-	Int max_ulps_diff_;
+	// TODO calibrate default max_diff
+	T   max_diff_      = std::numeric_limits<T>::epsilon();  // or sqrt(eps)
+	Int max_ulps_diff_ = 4;
 };
 
 
-// TODO: calibrate default max_diff
+/*
+// Loose function
 template<typename T>
 bool almost_equal(
 	T a, T b, T max_diff = 1.0e-5, T max_rel_diff = std::numeric_limits<T>::epsilon()
@@ -153,8 +159,10 @@ bool almost_equal(
 	}
 }
 
+// Misc.
+using Float_t  = FloatingPointNumber<float>;
+using Double_t = FloatingPointNumber<double>;
 
-/*
 // Original
 union Float_t
 {
