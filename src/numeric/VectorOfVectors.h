@@ -50,6 +50,7 @@ class VectorOfVectors
 	using SubvectorReverseIterator      = pointer;
 	using SubvectorConstReverseIterator = const_pointer;
 
+	// Initialize empty
 	VectorOfVectors() {}
 
 	// Initialize with specified subvector capacities
@@ -59,7 +60,12 @@ class VectorOfVectors
 		assignEmptyWithCapacities(capacities, total_capacity);
 	}
 
-	// Initialize with uniform subvector capacity
+	// Initialize as 'size' empty subvectors (with some default uniform capacity)
+	VectorOfVectors(const size_type size):
+		VectorOfVectors(size, initial_default_subvec_capacity_)
+	{}
+
+	// Initialize as 'size' empty subvectors with uniform capacity
 	VectorOfVectors(const size_type size, const size_type subvec_capacity): 
 		VectorOfVectors(std::vector<size_type>(size, subvec_capacity))
 	{}
@@ -71,20 +77,23 @@ class VectorOfVectors
 	}
 	// - Inner vector
 	size_type size(const size_type i) const {
+		FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 		return subvec_ends_[i] - subvec_begins_[i];  //return subvec_sizes_[i];
 	}
 
-	// Iterate over subvector 'i'
-	SubvectorIterator      begin (const size_type i)       noexcept { return &data_[subvec_begins_[i]]; }
-	SubvectorIterator      end   (const size_type i)       noexcept { return &data_[subvec_ends_[i]]; }
-	SubvectorConstIterator begin (const size_type i) const noexcept { return &data_[subvec_begins_[i]]; }
-	SubvectorConstIterator end   (const size_type i) const noexcept { return &data_[subvec_ends_[i]]; }
-	SubvectorConstIterator cbegin(const size_type i) const noexcept { return &data_[subvec_begins_[i]]; }
-	SubvectorConstIterator cend  (const size_type i) const noexcept { return &data_[subvec_ends_[i]]; }
-
 	// Access jth element of ith subvector
-	reference       operator()(const size_type i, const size_type j)       { return data_[subvec_begins_[i] + j]; } 
-	const_reference operator()(const size_type i, const size_type j) const { return data_[subvec_begins_[i] + j]; } 
+	// - TODO: noexcept iff NDEBUG
+	reference       operator()(const size_type i, const size_type j) noexcept;
+	const_reference operator()(const size_type i, const size_type j) const noexcept;
+
+	// Iterate over subvector 'i'
+	// - TODO: noexcept iff NDEBUG
+	SubvectorIterator      begin (const size_type i)       noexcept;
+	SubvectorIterator      end   (const size_type i)       noexcept;
+	SubvectorConstIterator begin (const size_type i) const noexcept;
+	SubvectorConstIterator end   (const size_type i) const noexcept;
+	SubvectorConstIterator cbegin(const size_type i) const noexcept;
+	SubvectorConstIterator cend  (const size_type i) const noexcept;
 
 	// Allocated sizes
 	// - Outer vector
@@ -96,9 +105,7 @@ class VectorOfVectors
 	}
 	// - Inner vector
 	size_type capacity(const size_type i) const {
-#ifndef NDEBUG
-		FANCY_ASSERT(i < size(), "out of bounds (i=" << i << ", size=" << size() << ")" );
-#endif
+		FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 		return subvec_alloc_ends_[i] - subvec_begins_[i];
 	}
 
@@ -121,9 +128,8 @@ class VectorOfVectors
 	// Append an element to the 'j'th subvector
 	// - May cause a reallocation
 	void push_back(const size_type i, const T& value) {
-#ifndef NDEBUG
-		FANCY_ASSERT(i < size(), "out of bounds (i=" << i << ", size=" << size() << ")" );
-#endif
+		FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+
 		if ( subvec_ends_[i] < subvec_alloc_ends_[i] ) {
 			data_[subvec_ends_[i]] = value;
 			++(subvec_ends_[i]);
@@ -138,14 +144,16 @@ class VectorOfVectors
 			++(subvec_ends_[i]);
 			return;
 		}
+#ifndef NDEBUG
+		checkInternalConsistency();
+#endif // ifndef NDEBUG
 	}
 
 	// Resize the 'i'th subvector to 'new_size'
 	// - May cause a reallocation
 	void resize(const size_type i, const size_type new_size) {
-#ifndef NDEBUG
-		FANCY_ASSERT(i < size(), "out of bounds (i=" << i << ", size=" << size() << ")" );
-#endif
+		FANCY_DEBUG_ASSERT(i < size(), "out of bounds (i=" << i << ", size=" << size() << ")" );
+
 		size_type current_capacity = capacity(i);
 		if ( new_size <= current_capacity ) {
 			subvec_ends_[i] = subvec_begins_[i] + new_size;
@@ -157,6 +165,9 @@ class VectorOfVectors
 			subvec_ends_[i] = subvec_begins_[i] + new_size;
 			return;
 		}
+#ifndef NDEBUG
+		checkInternalConsistency();
+#endif // ifndef NDEBUG
 	}
 
 	// Extend the capacity of the 'i'th subvector to be at least 'new_capacity'
@@ -191,6 +202,9 @@ class VectorOfVectors
 				subvec_alloc_ends_[k] += extra_capacity_needed;
 			}
 		}
+#ifndef NDEBUG
+		checkInternalConsistency();
+#endif // ifndef NDEBUG
 	}
 
 	/*
@@ -229,6 +243,9 @@ class VectorOfVectors
 			subvec_ends_.resize(new_size);
 			subvec_alloc_ends_.resize(new_size);
 		}
+#ifndef NDEBUG
+		checkInternalConsistency();
+#endif // ifndef NDEBUG
 	}
 
 	// Resize the vector and enforce that the subvectors satisfy the specified minimum capacities.
@@ -277,6 +294,9 @@ class VectorOfVectors
 			subvec_ends_.resize(new_size);
 			subvec_alloc_ends_.resize(new_size);
 		}
+#ifndef NDEBUG
+		checkInternalConsistency();
+#endif // ifndef NDEBUG
 	}
 
 	// Reset the contents of subvector 'i'
@@ -326,7 +346,7 @@ class VectorOfVectors
 	// Dump lots of info to the indicated stream
 	std::ostream& dump(std::ostream& os) const;
 
-	// Performs lots of internal santity checks
+	// Performs lots of internal santity checks. Throws an exception if any of them fails.
 	void checkInternalConsistency() const;
 
 
@@ -356,6 +376,10 @@ class VectorOfVectors
 			subvec_ends_[i]       = subvec_begins_[i];
 			subvec_alloc_ends_[i] = subvec_begins_[i] + capacities[i];
 		}
+
+#ifndef NDEBUG
+		checkInternalConsistency();
+#endif // ifndef NDEBUG
 	}
 
 	// Performs a full reallocation
@@ -383,6 +407,10 @@ class VectorOfVectors
 			}
 			new_obj.subvec_ends_[i] = new_obj.subvec_begins_[i] + this->size(i);
 		}
+
+#ifndef NDEBUG
+		checkInternalConsistency();
+#endif // ifndef NDEBUG
 	}
 
 	// Calculates a new total capcity, including growth
@@ -415,9 +443,8 @@ class VectorOfVectors
 	// - Takes advantage of excess capacity at the end of 'data_'
 	// - Does not do any bounds checking!
 	void allocateNewSubvectorAtEnd(const size_type capacity) {
-#ifndef NDEBUG
-		FANCY_ASSERT( capacity <= getExcessCapacity(), "improper use (not enough space)" );
-#endif
+		FANCY_DEBUG_ASSERT( capacity <= getExcessCapacity(), "improper use (not enough space)" );
+
 		size_type first = 0;
 		if ( size() > 0 ) {
 			first = subvec_alloc_ends_.back();
@@ -425,6 +452,10 @@ class VectorOfVectors
 		subvec_begins_.push_back( first );
 		subvec_ends_.push_back( first );
 		subvec_alloc_ends_.push_back( first + capacity );
+
+#ifndef NDEBUG
+		checkInternalConsistency();
+#endif // ifndef NDEBUG
 	}
 
  private:
@@ -439,7 +470,8 @@ class VectorOfVectors
 	//   subvec_sizes_[i] = subvec_ends_[i] - subvec_begins[i]
 	//std::vector<size_type> subvec_sizes_  = {};
 
-	size_type default_subvec_capacity_ = 10;
+	static constexpr size_type initial_default_subvec_capacity_ = 10;
+	size_type default_subvec_capacity_ = initial_default_subvec_capacity_;
 
 	// These determine how quickly the outer and inner vectors grow upon reallocation
 	// - Must be >1.0
@@ -448,8 +480,8 @@ class VectorOfVectors
 };
 
 
-template<typename T, typename Vector>
-std::ostream& VectorOfVectors<T,Vector>::dump(std::ostream& os) const
+template<typename T, typename V>
+std::ostream& VectorOfVectors<T,V>::dump(std::ostream& os) const
 {
 	os << "VectorOfVectors\n"
 	   << "-----\n"
@@ -477,18 +509,109 @@ std::ostream& VectorOfVectors<T,Vector>::dump(std::ostream& os) const
 }
 
 
-template<typename T, typename Vector>
-void VectorOfVectors<T,Vector>::checkInternalConsistency() const
+template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::reference
+VectorOfVectors<T,V>::operator()(const size_type i, const size_type j) noexcept
 {
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	FANCY_DEBUG_ASSERT( subvec_begins_[i]+j < data_.size(),
+	                    "index " << subvec_begins_[i]+j << " out of bounds: size = " << data_.size() );
+	return data_[subvec_begins_[i] + j];
+} 
+
+template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::const_reference
+VectorOfVectors<T,V>::operator()(const size_type i, const size_type j) const noexcept
+{
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	FANCY_DEBUG_ASSERT( subvec_begins_[i]+j < data_.size(),
+	                    "index " << subvec_begins_[i]+j << " out of bounds: size = " << data_.size() );
+	return data_[subvec_begins_[i] + j];
+}
+
+template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::SubvectorIterator
+VectorOfVectors<T,V>::begin(const size_type i) noexcept
+{
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	FANCY_DEBUG_ASSERT( subvec_begins_[i] < data_.size(),
+	                    "index " << subvec_begins_[i] << " out of bounds: size = " << data_.size() );
+	return &data_[subvec_begins_[i]];
+}
+
+template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::SubvectorIterator
+VectorOfVectors<T,V>::end(const size_type i) noexcept 
+{
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	FANCY_DEBUG_ASSERT( subvec_ends_[i] < data_.size(),
+	                    "index " << subvec_ends_[i] << " out of bounds: size = " << data_.size() );
+	return &data_[subvec_ends_[i]];
+}
+
+template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::SubvectorConstIterator
+VectorOfVectors<T,V>::begin (const size_type i) const noexcept
+{
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	FANCY_DEBUG_ASSERT( subvec_begins_[i] < data_.size(),
+	                    "index " << subvec_begins_[i] << " out of bounds: size = " << data_.size() );
+	return &data_[subvec_begins_[i]];
+}
+
+template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::SubvectorConstIterator
+VectorOfVectors<T,V>::end(const size_type i) const noexcept
+{
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	FANCY_DEBUG_ASSERT( subvec_ends_[i] < data_.size(),
+	                    "index " << subvec_ends_[i] << " out of bounds: size = " << data_.size() );
+	return &data_[subvec_ends_[i]];
+}
+
+template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::SubvectorConstIterator
+VectorOfVectors<T,V>::cbegin(const size_type i) const noexcept
+{
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	FANCY_DEBUG_ASSERT( subvec_begins_[i] < data_.size(),
+	                    "index " << subvec_begins_[i] << " out of bounds: size = " << data_.size() );
+	return &data_[subvec_begins_[i]];
+}
+
+template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::SubvectorConstIterator
+VectorOfVectors<T,V>::cend(const size_type i) const noexcept
+{
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	FANCY_DEBUG_ASSERT( subvec_ends_[i] < data_.size(),
+	                    "index " << subvec_ends_[i] << " out of bounds: size = " << data_.size() );
+	return &data_[subvec_ends_[i]];
+}
+
+
+template<typename T, typename V>
+void VectorOfVectors<T,V>::checkInternalConsistency() const
+{
+	// Check member variable sizes
 	size_type outer_size = this->size();
 	FANCY_ASSERT( subvec_begins_.size()     == outer_size, "bad size" );
 	FANCY_ASSERT( subvec_ends_.size()       == outer_size, "bad size" );
 	FANCY_ASSERT( subvec_alloc_ends_.size() == outer_size, "bad size" );
 
 	if ( outer_size > 0 ) {
-		subvec_alloc_ends_.back() <= capacity();
+		FANCY_ASSERT( subvec_alloc_ends_.back() <= capacity(), "bad capacity" );
 	}
 
+	// Check subvector setup
 	for ( size_type i=0; i<outer_size; ++i ) {
 		FANCY_ASSERT( subvec_begins_[i] <= subvec_ends_[i], "bad range" );
 		FANCY_ASSERT( subvec_ends_[i] <= subvec_alloc_ends_[i], "bad range" );
@@ -500,10 +623,10 @@ void VectorOfVectors<T,Vector>::checkInternalConsistency() const
 }
 
 
-template<typename T, typename Vector = std::vector<T>>
-std::ostream& operator<<(std::ostream& os, const VectorOfVectors<T,Vector>& vec)
+template<typename T, typename V>
+std::ostream& operator<<(std::ostream& os, const VectorOfVectors<T,V>& vec)
 {
-	using size_type = typename VectorOfVectors<T,Vector>::size_type;
+	using size_type = typename VectorOfVectors<T,V>::size_type;
 
 	size_type outer_size = vec.size();
 	for ( size_type i=0; i<outer_size; ++i ) {

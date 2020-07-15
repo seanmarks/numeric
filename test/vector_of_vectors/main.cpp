@@ -1,12 +1,17 @@
-#include "numeric/Assert.h"
-#include "numeric/VectorOfVectors.h"
+//#include "main.h"
 
+#include <array>
+#include <random>
 #include <tuple>
+#include <vector>
 
+#include "numeric/Assert.h"
+#include "numeric/Random.h"
+#include "numeric/RandomSampler.h"
+#include "numeric/VectorOfVectors.h"
 
 template<typename T>
 using TestElement = std::tuple<unsigned,unsigned,T>;  // (outer, inner, value)
-
 
 int main(int argc, char* argv[])
 {
@@ -43,7 +48,7 @@ int main(int argc, char* argv[])
 
 	// Grow
 	unsigned index = 2;
-	unsigned test_size = 13;
+	unsigned test_size = outer_size + 3;
 	vec.resize(index, test_size);
 	vec.checkInternalConsistency();
 	FANCY_ASSERT( vec.size(index) == test_size,
@@ -153,6 +158,75 @@ int main(int argc, char* argv[])
 		FANCY_ASSERT( vec.size(i) == 0,
 		              "bad value (expected " << 0 << ", got " << vec.size(i) << ")" );
 	}
+
+
+	//----- Neighbor search -----//
+
+	std::cout << "Test using neighbor search\n";
+
+	static constexpr int N_DIM = 3;
+	using Real3     = std::array<double,N_DIM>;
+	using Positions = std::vector<Real3>;
+
+	// Sample positions
+	int num_particles = 1000;
+	double box_length = 1.0;
+	double r_cut = 0.25;  // cutoff
+
+	// Generate random numbers within the confines of a cubic box
+	using Distribution = std::uniform_real_distribution<double>;
+	Distribution distribution(0.0, box_length);
+	RandomSampler<Distribution> sampler( distribution, Random::getDebugSequence() );
+	std::vector<double> sample;
+	sampler.generate(N_DIM*num_particles, sample);
+
+	// Set up random positions
+	Positions positions(num_particles);
+	for ( int i=0; i<num_particles; ++i ) {
+		for ( int d=0; d<N_DIM; ++d ) {
+			positions[i][d] = sample[i*N_DIM + d];
+		}
+	}
+
+	// Build a neighbor list using different data structures
+	VectorOfVectors<int> neighbor_list(num_particles, 2);
+	std::vector<std::vector<int>> ref_list(num_particles);
+	for ( int i=0; i<num_particles; ++i ) {
+		for ( int j=i+1; j<num_particles; ++j ) {
+			// Distance between particles
+			double r = 0.0;
+			for ( int d=0; d<N_DIM; ++d ) {
+				double dx = positions[j][d] - positions[i][d];
+				r += dx*dx;
+			}
+			r = sqrt(r);
+
+			if ( r <= r_cut ) {
+				// Save in each structure
+				neighbor_list.push_back(i, j);
+				neighbor_list.push_back(j, i);
+
+				ref_list[i].push_back(j);
+				ref_list[j].push_back(i);
+			}
+		}
+	}
+
+	// Compare results
+	for ( int i=0; i<num_particles; ++i ) {
+		FANCY_ASSERT( neighbor_list.size(i) == ref_list[i].size(), "size mismatch" );
+		if ( neighbor_list.size(i) == 0 ) {
+			std::cerr << "particle " << i << " has no neighbors: this is HIGHLY unlikely!\n";
+		}
+
+		int num = neighbor_list.size(i);
+		for ( int j=0; j<num; ++j ) {
+			FANCY_ASSERT( neighbor_list(i,j) == ref_list[i][j], "element mismatch" );
+		}
+	}
+
+
+	std::cout << "Done\n";
 
 	return 0;
 };
