@@ -231,7 +231,33 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//outer_size += 2;
+	// Force a reallocation with new (empty) subvectors at the end
+	unsigned new_outer_size = outer_size;
+	unsigned new_subvec_capacity = 5;
+	for ( unsigned k=0; k<2; ++k ) {
+		new_capacities.push_back( new_subvec_capacity );
+		++new_outer_size;
+	}
+	vec.resizeWithMinimumCapacities( new_capacities );
+	vec.checkInternalConsistency();
+	FANCY_ASSERT( vec.size() == new_outer_size,
+	              "bad size (expected " << new_outer_size << ", got " << vec.size() << ")" );
+	for ( unsigned i=0; i<outer_size; ++i ) {
+		FANCY_ASSERT( vec.size(i) == i,
+		              "bad size (expected " << i << ", got " << vec.size(i) << ")" );
+		FANCY_ASSERT( vec.capacity(i) >= new_capacities[i],
+		              "bad capacity (expected >= " << new_capacities[i] << ", got " << vec.capacity(i) << ")" );
+		for ( unsigned j=0; j<i; ++j ) {
+			FANCY_ASSERT( vec(i, j) == static_cast<int>(j),
+			              "bad value (expected " << j << ", got " << vec(index, j) << ")" );
+		}
+	}
+	for ( unsigned i=outer_size; i<new_outer_size; ++i ) {
+		FANCY_ASSERT( vec.size(i) == 0,
+		              "bad size (expected " << 0 << ", got " << vec.size(i) << ")" );
+		FANCY_ASSERT( vec.capacity(i) >= new_subvec_capacity,
+		              "bad capacity (expected >= " << new_subvec_capacity << ", got " << vec.capacity(i) << ")" );
+	}
 
 
 	//----- Neighbor search -----//

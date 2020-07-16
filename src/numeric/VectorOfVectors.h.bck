@@ -1,11 +1,11 @@
-// VectorOfVectors - vector of subvectors with varying lengths
+// VectorOfVectors
+// - Vector of subvectors with varying lengths
+//   - Implemented in linear storage
 //
 // AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 //
-// NOTES
-// - Implemented in linear storage
-//
-// TODO:
+// - TODO:
+//   - Move implementations out of class body for readability
 
 #pragma once
 #ifndef VECTOR_OF_VECTORS_H
@@ -552,6 +552,7 @@ void VectorOfVectors<T,V>::resizeWithMinimumCapacities(const std::vector<size_ty
 }
 
 
+// TODO
 template<typename T, typename V>
 template<class InputIt>
 void VectorOfVectors<T,V>::append(InputIt first, InputIt last)
@@ -582,12 +583,13 @@ void VectorOfVectors<T,V>::append(InputIt first, InputIt last)
 		}
 	}
 
-	// Combine
-	for ( auto it = first; it != last; ++it ) {
-		for ( size_type i=0; i<len; ++i ) {
-			this->append(i, it->cbegin(i), it->cend(i));
-		}
+	/*
+	std::for_each( subvec_sizes.begin(), subvec_sizes.end(), [this](int& s){ s += 
+	*/
+	/*
+	for ( int i=0; i<len; ++i ) {
 	}
+	*/
 }
 
 
@@ -734,6 +736,8 @@ void VectorOfVectors<T,V>::assignEmptyWithCapacities(
 template<typename T, typename V>
 void VectorOfVectors<T,V>::reallocate(std::vector<size_type> capacities)
 {
+	std::cerr << "REALLOCATE";  // FIXME DEBUG
+
 	// Ensure that no data is lost in existing subvectors that are larger than
 	// the minimum requested
 	size_type new_size = capacities.size();
@@ -743,7 +747,7 @@ void VectorOfVectors<T,V>::reallocate(std::vector<size_type> capacities)
 		capacities[i] = std::max( capacities[i], this->capacity(i) );
 	}
 
-	// Move data to a new object with the appropriate dimensions
+	// Move data to a new object of the appropriate dimensions
 	VectorOfVectors new_obj(capacities, this->capacity());
 	using std::swap;  // enable ADL
 	for ( size_type i=0; i<i_max; ++i ) {
@@ -753,10 +757,9 @@ void VectorOfVectors<T,V>::reallocate(std::vector<size_type> capacities)
 		for ( size_type k = first; k != last; ++k, ++k_new ) {
 			swap( new_obj.data_[k_new], this->data_[k] );
 		}
-		new_obj.subvec_ends_[i] = new_obj.subvec_begins_[i] + this->size(i);
+		//new_obj.subvec_ends_[i] = new_obj.subvec_begins_[i] + this->size(i);
 	}
 
-	// Swap contents with new object
 	swap(*this, new_obj);
 
 #ifndef NDEBUG
