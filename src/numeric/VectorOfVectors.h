@@ -260,6 +260,9 @@ class VectorOfVectors
 	// Total excess capacity beyond the amount allocated for the last subvector
 	size_type getExcessCapacity() const;
 
+	// Excess capacity for 'i'th subvector
+	size_type getExcessCapacity(const size_type i) const;
+
 	// Creates a new empty subvector at the end of the outer vector with the given capacity
 	// - Takes advantage of excess capacity at the end of 'data_'
 	// - *** Does not do any bounds checking!
@@ -452,6 +455,7 @@ std::ostream& operator<<(std::ostream& os, const VectorOfVectors<T,V>& vec)
 
 
 template<typename T, typename V>
+inline
 typename VectorOfVectors<T,V>::size_type VectorOfVectors<T,V>::count() const
 {
 	size_type num = 0;
@@ -472,14 +476,14 @@ void VectorOfVectors<T,V>::resize(const size_type new_size)
 	else if ( new_size > old_size ) {
 		size_type extra_capacity_needed_at_end = (new_size - old_size)*default_subvec_capacity_;
 		if ( extra_capacity_needed_at_end > getExcessCapacity() ) {
-			// Not enough space at the end: need to allocate more
+			// Allocate more space at the end
 			size_type new_capacity = calculateNewTotalCapacity(capacity() + extra_capacity_needed_at_end);
 			data_.resize( new_capacity );
 		}
 
 		// Set up new subvectors at the end
 		for ( size_type i=old_size; i<new_size; ++i ) {
-			allocateNewSubvectorAtEnd( default_subvec_capacity_ );
+			allocateNewSubvectorAtEndUnsafe( default_subvec_capacity_ );
 		}
 		return;
 	}
@@ -510,36 +514,38 @@ void VectorOfVectors<T,V>::resizeWithMinimumCapacities(const std::vector<size_ty
 			break;
 		}
 	}
-	if ( need_realloc ) {
-		this->reallocate(capacities);
-		return;
-	}
 
-	if ( new_size == old_size ) {
-		return;  // nothing else to do
+	if ( need_realloc ) {
+		// Need a full reallocation
+		this->reallocate(capacities);
 	}
-	else if ( new_size > old_size ) {
-		// Check whether there is enough space at the end
-		size_type extra_capacity_needed_at_end = 0;
-		for ( size_type i=old_size; i<new_size; ++i ) {
-			extra_capacity_needed_at_end += capacities[i];
-		}
-		if ( extra_capacity_needed_at_end <= getExcessCapacity() ) {
+	else {
+		if ( new_size > old_size ) {
+			// Check whether there is enough space at the end
+			size_type extra_capacity_needed_at_end = 0;
 			for ( size_type i=old_size; i<new_size; ++i ) {
-				allocateNewSubvectorAtEnd( capacities[i] );
+				extra_capacity_needed_at_end += capacities[i];
+			}
+			if ( extra_capacity_needed_at_end <= getExcessCapacity() ) {
+				// Use extra space at the end
+				for ( size_type i=old_size; i<new_size; ++i ) {
+					allocateNewSubvectorAtEndUnsafe( capacities[i] );
+				}
+			}
+			else {
+				// Need a full reallocation after all
+				this->reallocate(capacities);
+				return;
 			}
 		}
-		else {
-			this->reallocate(capacities);
-			return;
+		else if ( new_size < old_size ) {
+			// Deallocate space
+			subvec_begins_.resize(new_size);
+			subvec_ends_.resize(new_size);
+			subvec_alloc_ends_.resize(new_size);
 		}
 	}
-	else { // new_size < old_size
-		// Deallocate space
-		subvec_begins_.resize(new_size);
-		subvec_ends_.resize(new_size);
-		subvec_alloc_ends_.resize(new_size);
-	}
+
 #ifndef NDEBUG
 	checkInternalConsistency();
 #endif // ifndef NDEBUG
@@ -578,24 +584,21 @@ void VectorOfVectors<T,V>::append(InputIt first, InputIt last)
 
 
 template<typename T, typename V>
+inline
 void VectorOfVectors<T,V>::push_back(const size_type i, const T& value)
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 
-	if ( subvec_ends_[i] < subvec_alloc_ends_[i] ) {
-		data_[subvec_ends_[i]] = value;
-		++(subvec_ends_[i]);
-		return;
-	}
-	else {
+	if ( getExcessCapacity(i) == 0 ) {
 		// Need to allocate more space
 		size_type new_capacity = calculateNewSubvectorCapacity( capacity(i) );
 		extendCapacity(i, new_capacity);
-
-		data_[subvec_ends_[i]] = value;
-		++(subvec_ends_[i]);
-		return;
 	}
+
+	// Append element
+	data_[subvec_ends_[i]] = value;
+	++(subvec_ends_[i]);
+
 #ifndef NDEBUG
 	checkInternalConsistency();
 #endif // ifndef NDEBUG
@@ -603,21 +606,20 @@ void VectorOfVectors<T,V>::push_back(const size_type i, const T& value)
 
 
 template<typename T, typename V>
+inline
 void VectorOfVectors<T,V>::resize(const size_type i, const size_type new_size)
 {
 	FANCY_DEBUG_ASSERT(i < size(), "out of bounds (i=" << i << ", size=" << size() << ")" );
 
-	size_type current_capacity = capacity(i);
-	if ( new_size <= current_capacity ) {
-		subvec_ends_[i] = subvec_begins_[i] + new_size;
-		return;
-	}
-	else {
+	if ( new_size > capacity(i) ) {
+		// Need to allocate more spece
 		size_type new_capacity = calculateNewSubvectorCapacity( new_size );
 		extendCapacity(i, new_capacity);
-		subvec_ends_[i] = subvec_begins_[i] + new_size;
-		return;
 	}
+
+	// Update size
+	subvec_ends_[i] = subvec_begins_[i] + new_size;
+
 #ifndef NDEBUG
 	checkInternalConsistency();
 #endif // ifndef NDEBUG
@@ -664,6 +666,7 @@ void VectorOfVectors<T,V>::extendCapacity(const size_type i, const size_type new
 
 template<typename T, typename V>
 template<class InputIt>
+inline
 void VectorOfVectors<T,V>::append(size_type i, InputIt first, InputIt last)
 {
 	static_assert(
@@ -764,6 +767,17 @@ VectorOfVectors<T,V>::getExcessCapacity() const
 
 
 template<typename T, typename V>
+inline
+typename VectorOfVectors<T,V>::size_type
+VectorOfVectors<T,V>::getExcessCapacity(const size_type i) const
+{
+	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+	return subvec_alloc_ends_[i] - subvec_ends_[i];
+}
+
+
+template<typename T, typename V>
+inline
 void VectorOfVectors<T,V>::allocateNewSubvectorAtEndUnsafe(const size_type capacity)
 {
 	FANCY_DEBUG_ASSERT( capacity <= getExcessCapacity(), "improper use (not enough space)" );
