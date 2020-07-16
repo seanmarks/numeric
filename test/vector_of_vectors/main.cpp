@@ -259,10 +259,43 @@ int main(int argc, char* argv[])
 		              "bad capacity (expected >= " << new_subvec_capacity << ", got " << vec.capacity(i) << ")" );
 	}
 
+	//----- Test append -----//
+
+	// Make one vector have the lower numbers in a series, and the
+	// other have the upper numbers (for each row)
+	vec.clear();
+	vec.resize(outer_size);
+	VectorOfVectors<int> other(outer_size, min_inner_size);
+	for ( unsigned i=0; i<outer_size;++i ) {
+		for ( unsigned j=0; j<i; ++j ) {
+			vec.push_back(i, j);
+		}
+		for ( unsigned j=i; j<outer_size; ++j ) {
+			other.push_back(i, j);
+		}
+	}
+
+	// Combine
+	auto first = &other;
+	auto end   = std::next(first);
+	vec.append(first, end);
+
+	// Each row should have the same contents
+	FANCY_ASSERT( vec.size() == outer_size,
+	              "bad size (expected " << outer_size << ", got " << vec.size() << ")" );
+	for ( unsigned i=0; i<outer_size; ++i ) {
+		FANCY_ASSERT( vec.size(i) == outer_size,
+		              "bad size (expected " << outer_size << ", got " << vec.size(i) << ")" );
+		for ( unsigned j=0; j<outer_size; ++j ) {
+			FANCY_ASSERT( vec(i, j) == static_cast<int>(j),
+			              "bad value (expected " << j << ", got " << vec(index, j) << ")" );
+		}
+	}
+
 
 	//----- Neighbor search -----//
 
-	std::cout << "Test using neighbor search\n";
+	std::cout << "Test using neighbor search" << std::endl;
 
 	static constexpr int N_DIM = 3;
 	using Real3     = std::array<double,N_DIM>;

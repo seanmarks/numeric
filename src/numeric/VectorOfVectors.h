@@ -151,6 +151,7 @@ class VectorOfVectors
 	}
 
 	// Appends a series of other objects to this one, subvector-wise, in order
+	// - May cause a reallocation
 	template<class InputIt>
 	void append(InputIt first, InputIt last);
 
@@ -166,10 +167,12 @@ class VectorOfVectors
 	void resize(const size_type i, const size_type new_size);
 
 	// Extend the capacity of the 'i'th subvector to be at least 'new_capacity'
+	// - May cause a reallocation
 	void extendCapacity(const size_type i, const size_type new_capacity);
 
 	// Reset the contents of subvector 'i'
 	void reset(const size_type i) {
+		FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 		subvec_ends_[i] = subvec_begins_[i];
 	}
 	void clear(const size_type i) {
@@ -177,6 +180,7 @@ class VectorOfVectors
 	}
 
 	// Appends a range of values to the 'i'th subvector
+	// - May cause a reallocation
 	// TODO How to handle self-insertion?
 	// TODO return iterator to first inserted element?
 	// - Would match signature of std::vector
