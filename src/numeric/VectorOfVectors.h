@@ -263,7 +263,7 @@ class VectorOfVectors
 	// Excess capacity for 'i'th subvector
 	size_type getExcessCapacity(const size_type i) const;
 
-	// Creates a new empty subvector at the end of the outer vector with the given capacity
+	// Creates a new *empty* subvector at the end of the outer vector with the given capacity
 	// - Takes advantage of excess capacity at the end of 'data_'
 	// - *** Does not do any bounds checking!
 	void allocateNewSubvectorAtEndUnsafe(const size_type capacity);
@@ -562,8 +562,9 @@ void VectorOfVectors<T,V>::append(InputIt first, InputIt last)
 	  "requires an iterator to the same class"
 	);
 
+	// Compute final subvector sizes
 	const size_type len = size();
-	std::vector<size_type> subvec_sizes(len);
+	std::vector<size_type> subvec_sizes(len, 0);
 	for ( size_type i=0; i<len; ++i ) {
 		subvec_sizes[i] += size(i);
 	}
@@ -573,6 +574,15 @@ void VectorOfVectors<T,V>::append(InputIt first, InputIt last)
 			subvec_sizes[i] += it->size(i);
 		}
 	}
+
+	// Reallocate if more memory is needed
+	for ( size_type i=0; i<len; ++i ) {
+		if ( subvec_sizes[i] > capacity(i) ) {
+			reallocate(subvec_sizes);
+			break;
+		}
+	}
+
 	/*
 	std::for_each( subvec_sizes.begin(), subvec_sizes.end(), [this](int& s){ s += 
 	*/
@@ -735,17 +745,21 @@ void VectorOfVectors<T,V>::reallocate(std::vector<size_type> capacities)
 		capacities[i] = std::max( capacities[i], this->capacity(i) );
 	}
 
-	// Move data to a new object of the appropriate dimensions
+	// Move data to a new object with the appropriate dimensions
 	VectorOfVectors new_obj(capacities, this->capacity());
+	using std::swap;  // enable ADL
 	for ( size_type i=0; i<i_max; ++i ) {
 		size_type first = this->subvec_begins_[i];
 		size_type last  = this->subvec_ends_[i];
 		size_type k_new = new_obj.subvec_begins_[i];
 		for ( size_type k = first; k != last; ++k, ++k_new ) {
-			std::swap( new_obj.data[k_new], this->data_[k] );
+			swap( new_obj.data_[k_new], this->data_[k] );
 		}
 		new_obj.subvec_ends_[i] = new_obj.subvec_begins_[i] + this->size(i);
 	}
+
+	// Swap contents with new object
+	swap(*this, new_obj);
 
 #ifndef NDEBUG
 	checkInternalConsistency();

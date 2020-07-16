@@ -2,6 +2,7 @@
 
 //#include "main.h"
 
+#include <algorithm>
 #include <array>
 #include <random>
 #include <tuple>
@@ -25,9 +26,10 @@ int main(int argc, char* argv[])
 
 	//std::cout << "vec = \n" << vec << "\n";
 
+
 	//----- Basic allocation -----//
 
-	std::cout << "Testing basic allocation..." << std::endl;
+	std::cout << "Test basic allocation" << std::endl;
 
 	// Outer vector
 	FANCY_ASSERT( vec.size() == outer_size,
@@ -48,7 +50,10 @@ int main(int argc, char* argv[])
 
 	//----- resize a subvector -----//
 
+	std::cout << "Test resizing a subvector" << std::endl;
+
 	// Grow
+	std::cout << "  Grow" << std::endl;
 	unsigned index = 2;
 	unsigned test_size = outer_size + 3;
 	vec.resize(index, test_size);
@@ -60,6 +65,7 @@ int main(int argc, char* argv[])
 
 
 	// Shrink
+	std::cout << "  Shrink" << std::endl;
 	index = 2;
 	test_size = 5;
 	vec.resize(index, test_size);
@@ -70,6 +76,7 @@ int main(int argc, char* argv[])
 	              "bad capacity (expected >= " << test_size << ", got " << vec.capacity(index) << ")" );
 
 	// Stay the same
+	std::cout << "  Stay the same" << std::endl;
 	vec.resize(index, test_size);
 	vec.checkInternalConsistency();
 	FANCY_ASSERT( vec.size(index) == test_size,
@@ -79,6 +86,8 @@ int main(int argc, char* argv[])
 
 
 	//----- Test iteration -----//
+
+	std::cout << "Test iteration" << std::endl;
 
 	// Setting and getting values with operator()
 	index = 1;
@@ -105,6 +114,8 @@ int main(int argc, char* argv[])
 
 	//----- push_back() inner -----//
 
+	std::cout << "Test push_back() on an inner subvector" << std::endl;
+
 	// Set some values *after* where insertion will happen
 	std::vector<TestElement<int>> known_elements;
 	unsigned later_index = 7;
@@ -113,7 +124,7 @@ int main(int argc, char* argv[])
 	for ( unsigned j=0; j<test_size; ++j ) {
 		int val = 4*j - 3;
 		vec.push_back(later_index, val);
-		known_elements.push_back( std::make_tuple(later_index, j, val) );
+		known_elements.push_back( std::make_tuple(later_index, j, val) );  // record what's inserted
 	}
 	vec.checkInternalConsistency();	
 
@@ -121,7 +132,7 @@ int main(int argc, char* argv[])
 	vec.dump(std::cout);
 	std::cout << "\n";
 
-	// Force the reallocation of a subvector
+	// Force the reallocation of a subvector by adding elements to it
 	index = later_index - 3;
 	unsigned num = vec.capacity(index) + 3;
 	for ( unsigned j=0; j<num; ++j ) {
@@ -155,11 +166,72 @@ int main(int argc, char* argv[])
 
 	//----- Reset -----//
 
+	std::cout << "Test reset" << std::endl;
+
 	vec.reset();
 	for ( unsigned i=0; i<vec.size(); ++i ) {
 		FANCY_ASSERT( vec.size(i) == 0,
 		              "bad value (expected " << 0 << ", got " << vec.size(i) << ")" );
+		FANCY_ASSERT( vec.capacity(i) > 0,
+		              "subvector capacity is unexpectedly empty" );
 	}
+
+
+	//----- Clear -----//
+
+	std::cout << "Test clear" << std::endl;
+
+	vec.clear();
+	FANCY_ASSERT( vec.size() == 0,
+	              "bad size (expected " << 0 << ", got " << vec.size() << ")" );
+
+
+	//----- Test full reallocation -----//
+
+	std::cout << "Test full reallocation" << std::endl;
+
+	// Setup
+	vec.clear();
+	vec.resize(outer_size);
+	FANCY_ASSERT( vec.size() == outer_size,
+	              "bad value (expected " << outer_size << ", got " << vec.size() << ")" );
+	for ( unsigned i=0; i<outer_size; ++i ) {
+		for ( unsigned j=0; j<i; ++j ) {
+			vec.push_back(i, j);
+		}
+	}
+
+	// Validate setup
+	for ( unsigned i=0; i<outer_size; ++i ) {
+		FANCY_ASSERT( vec.size(i) == i,
+		              "bad size (expected " << i << ", got " << vec.size(i) << ")" );
+		for ( unsigned j=0; j<i; ++j ) {
+			FANCY_ASSERT( vec(i, j) == static_cast<int>(j),
+			              "bad value (expected " << j << ", got " << vec(index, j) << ")" );
+		}
+	}
+
+	// Force a reallocation by extending all capacities
+	std::vector<std::size_t> new_capacities( outer_size );
+	std::iota( new_capacities.begin(), new_capacities.end(), outer_size );
+	vec.resizeWithMinimumCapacities( new_capacities );
+	vec.checkInternalConsistency();
+	FANCY_ASSERT( vec.size() == outer_size,
+	              "bad size (expected " << outer_size << ", got " << vec.size() << ")" );
+
+	// Check that data remains intact, and that new minimum capacities have been satisfied
+	for ( unsigned i=0; i<outer_size; ++i ) {
+		FANCY_ASSERT( vec.size(i) == i,
+		              "bad size (expected " << i << ", got " << vec.size(i) << ")" );
+		FANCY_ASSERT( vec.capacity(i) >= new_capacities[i],
+		              "bad capacity (expected >= " << new_capacities[i] << ", got " << vec.capacity(i) << ")" );
+		for ( unsigned j=0; j<i; ++j ) {
+			FANCY_ASSERT( vec(i, j) == static_cast<int>(j),
+			              "bad value (expected " << j << ", got " << vec(index, j) << ")" );
+		}
+	}
+
+	//outer_size += 2;
 
 
 	//----- Neighbor search -----//
