@@ -120,6 +120,10 @@ class VectorOfVectors
 	// Total number of elements in use
 	size_type count() const;
 
+	// Comparison
+	bool operator==(const VectorOfVectors<T,Vector>& other) const;
+	bool operator!=(const VectorOfVectors<T,Vector>& other) const;
+
 
 	//----- Outer Vector Operations -----//
 
@@ -467,6 +471,41 @@ typename VectorOfVectors<T,V>::size_type VectorOfVectors<T,V>::count() const
 		num += size(i);
 	}
 	return num;
+}
+
+
+template<typename T, typename V>
+inline
+bool VectorOfVectors<T,V>::operator==(const VectorOfVectors<T,V>& other) const
+{
+	return ! (*this != other);
+}
+
+
+template<typename T, typename V>
+bool VectorOfVectors<T,V>::operator!=(const VectorOfVectors<T,V>& other) const
+{
+	// TODO: static_assert() type restrictions
+
+	if ( this == &other ) {
+		return false;  // self-comparison
+	}
+	else if ( size() != other.size() ) {
+		return true;  // outer size mismatch
+	}
+
+	for ( unsigned i=0; i<size(); ++i ) {
+		if ( size(i) != other.size(i) ) {
+			return true;  // inner size mismatch
+		}
+		for ( unsigned j=0; j<size(i); ++j ) {
+			if ( (*this)(i,j) != other(i,j) ) {
+				return true;  // element mismatch
+			}
+		}
+	}
+
+	return false;  // equal
 }
 
 

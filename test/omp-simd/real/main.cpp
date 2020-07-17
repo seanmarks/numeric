@@ -29,8 +29,8 @@ int main(int argc, char* argv[])
 	len = 5000;
 
 	// Number of iterations to perform
-	//int num_iterations = 100000;
-	int num_iterations = 200000;
+	int num_iterations = 100000;
+	//int num_iterations = 200000;
 	//int num_iterations = 1000000;
 
 	aligned::Allocator<Real> loose_allocator;
