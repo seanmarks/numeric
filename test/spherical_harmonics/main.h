@@ -15,6 +15,7 @@
 #include "numeric/CompareNumbers.h"
 #include "numeric/ComplexVector.h"
 #include "numeric/Constants.h"
+#include "numeric/GptlWrappers.h"
 #include "numeric/Matrix.h"
 #include "numeric/SphericalHarmonics.h"
 #include "numeric/Timer.h"

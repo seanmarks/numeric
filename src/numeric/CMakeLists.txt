@@ -2,32 +2,51 @@
 #
 # AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
-# Builds main library: ${LIB_NUMERIC}
+# Builds main library: numeric
 
-# Locate source files
-file(GLOB_RECURSE LIB_NUMERIC_SRC "${CMAKE_CURRENT_LIST_DIR}/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/*.h")
+# Standard install locations
+include(GNUInstallDirs)
 
-# Declare
-add_library(${LIB_NUMERIC} STATIC ${LIB_NUMERIC_SRC})
-
-# OpenMP
-if(OPENMP_ENABLED)
-	target_link_libraries(${LIB_NUMERIC} PUBLIC OpenMP::OpenMP_CXX)
+# Declare library
+if(BUILD_SHARED_LIBS)
+	add_library(numeric SHARED "")
+else()
+	# Need position-independent code to be able to link to a shared library
+	# - TODO: flag to override this depending on intended purpose (e.g. "LINK_ALL_STATIC")
+	add_library(numeric STATIC "")
+	set_target_properties(numeric PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+
+# Add source files
+file(GLOB_RECURSE LIB_NUMERIC_SRC "${CMAKE_CURRENT_LIST_DIR}/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/*.h")
+target_sources(numeric PUBLIC ${LIB_NUMERIC_SRC})
 
 # GPTL
 if(GPTL_ENABLED)
-	target_include_directories(${LIB_NUMERIC} PUBLIC "${GPTL_DIR}/include")
+	target_compile_definitions(numeric PUBLIC HAVE_GPTL=1)
+	target_link_libraries(numeric PUBLIC GPTL::GPTL)
+	target_include_directories(numeric PUBLIC ${GPTL_INCLUDE_DIRS})
 
-	# Prefer static linkage
-	if(LIB_GPTL_STATIC)
-		target_link_libraries(${LIB_NUMERIC} PUBLIC ${LIB_GPTL_STATIC})
-	else()
-		# Fall back on dynamic linkage of GPTL
-		target_link_libraries(${LIB_NUMERIC} PUBLIC ${LIB_GPTL})
-		target_link_directories(${LIB_NUMERIC} PUBLIC "${GPTL_DIR}/lib")
+	if(GPTL_AUTOPROFILE)
+		# TODO: flags on different systems
+		# TODO: public or private?
+		target_compile_options(numeric PRIVATE -finstrument-functions)
+		target_link_options(numeric PUBLIC -finstrument-functions)
+		target_link_options(numeric PUBLIC -rdynamic)
 	endif()
 endif()
 
+# OpenMP
+if(OPENMP_ENABLED)
+	target_compile_definitions(numeric PUBLIC HAVE_OPENMP=1)
+	target_link_libraries(numeric PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+# MPI
+if(MPI_ENABLED)
+	target_compile_definitions(numeric PUBLIC HAVE_MPI=1)
+	target_compile_definitions(numeric PUBLIC MPI_ENABLED=1)
+endif()
+
 # Where the libraries should be installed
-install(TARGETS ${LIB_NUMERIC} DESTINATION lib)
+install(TARGETS numeric DESTINATION lib)

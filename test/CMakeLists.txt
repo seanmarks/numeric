@@ -62,7 +62,7 @@ foreach(TEST_NAME IN LISTS NUMERIC_TEST_NAMES)
 	set_target_properties(${TEST_PROGRAM}
 												PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_BIN}
 												)
-	target_link_libraries(${TEST_PROGRAM} PUBLIC ${LIB_NUMERIC})
+	target_link_libraries(${TEST_PROGRAM} PUBLIC numeric)
 	target_include_directories(${TEST_PROGRAM} PUBLIC ${CMAKE_SOURCE_DIR}/src)
 
 	# Register test driver

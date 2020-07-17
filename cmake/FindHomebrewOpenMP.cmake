@@ -1,3 +1,5 @@
+# Attempt to find Homebrew OpenMP on Mac
+#
 # AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 function(findHomebrewOpenMP)
@@ -25,7 +27,7 @@ function(findHomebrewOpenMP)
 	# - Try again
 	find_package(OpenMP)
 	if(OpenMP_FOUND)
-		message("-- Found Homebrew OpenMP at: ${HOMEBREW_OPENMP_PREFIX}")
+		message(STATUS "Found Homebrew OpenMP at: ${HOMEBREW_OPENMP_PREFIX}")
 	else()
 		message(FATAL_ERROR "Homebrew OpenMP not found")
 	endif()

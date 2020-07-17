@@ -1,5 +1,6 @@
 # Check for a compiler-dependent equivalent of the C keyword 'restrict'
 # that will work with C++ code
+#
 # AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 
 include(WriteCXXSource)

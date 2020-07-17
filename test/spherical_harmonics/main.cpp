@@ -18,6 +18,13 @@ struct SphericalHarmonicsOutput
 
 int main(int argc, char* argv[])
 {
+	// GPTL: start
+	GPTL::GlobalOptions options;  // sets default options
+	GPTL::initialize();           // Initialize GPTL
+	GPTL::Timer gptl_timer("main");
+	gptl_timer.start();
+
+
 	//-----------------//
 	//----- Setup -----//
 	//-----------------//
@@ -62,7 +69,7 @@ int main(int argc, char* argv[])
 	int num_points = 1000;
 
 	// Number of iterations to perform
-	int num_iterations = 100;
+	int num_iterations = 10;
 	//int num_iterations = 1000;
 	//int num_iterations = 200000;
 	//int num_iterations = 1000000;
@@ -179,6 +186,12 @@ int main(int argc, char* argv[])
 	check(output_new, output_old);
 	comparePerformance(header, 0.0, timer_new, timer_old);
 	*/
+
+
+	// GPTL: done
+	gptl_timer.stop();
+	GPTL::print("gptl.log");
+	GPTL::finalize();
 
 	return 0;
 }
