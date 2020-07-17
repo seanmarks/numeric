@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 
 	aligned::Allocator<Real> loose_allocator;
 	std::cout << "OpenMP SIMD Testing\n"
-	          << "      alignment:  " << loose_allocator.get_alignment() << "\n"
+	          << "      alignment:  " << loose_allocator.getAlignment() << "\n"
 	          << "  vector length:  " << len << "\n"
 	          << "     iterations:  " << num_iterations << "\n"
 	          << std::endl;

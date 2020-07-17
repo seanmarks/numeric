@@ -1,5 +1,6 @@
 // Aligned dynamic memory allocation
-// - AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 //
 // - Provides general, C-style wrappers around system-specified functions that 
 //   allocate/deallocate aligned memory
@@ -53,59 +54,11 @@ namespace aligned {
 
 using size_type = std::size_t;
 
-
 // Aligned malloc
-void* malloc(const size_type size, const size_type alignment)
-{
-	// Require alignment/sizeof(void*) = 2^n for some positive integer 'n'
-	size_type n = alignment/(sizeof(void*));
-	bool is_power_of_2 = ( (n > 0) and ((n & (n-1)) == 0) );
-	if ( not is_power_of_2 ) {
-		throw std::runtime_error("Error in aligned::malloc - alignment/sizeof(void*) must be a power of 2");
-	}
+void* malloc(const size_type size, const size_type alignment);
 
-	if ( n == 0 ) {
-		return nullptr;
-	}
-
-	// Allocate memory
-	int ret;
-	void* mem_ptr = nullptr;
-#if defined(__GNUC__) || defined(__APPLE__)
-	ret = posix_memalign(&mem_ptr, alignment, size);
-	if ( ret != 0 ) {
-		if ( mem_ptr != nullptr ) { free(mem_ptr); }
-		throw std::runtime_error("posix_memalign: ret is nonzero");
-	}
-#elif defined(__intel__)
-	mem_ptr = _mm_alloc(size, alignment);
-#elif defined(_WIN32)
-	mem_ptr = _aligned_malloc(size, alignment);
-#else
-	// TODO As a fallback: allocate memory_needed+alignment bytes,
-	//  and find an address that matches the criteria
-	static_assert(false, "Unsupported aligned malloc");
-#endif
-
-	return mem_ptr;
-}
-
-
-// aligned free
-void free(void* mem_ptr) noexcept
-{
-#if defined(__GNUC__) || defined(__APPLE__)
-	// Memory allocated by 'posix_memalign()' is deallocated by the usual 'free()'
-	::free(mem_ptr);
-#elif defined(__intel__)
-	_mm_free(mem_ptr);
-#elif defined(_WIN32)
-	_aligned_free(mem_ptr);
-#else
-	::free(mem_ptr);
-#endif
-}
-
+// Aligned free
+void free(void* mem_ptr) noexcept;
 
 // STL-compatible allocator for aligned memory
 // - If template parameter 'Alignment' is zero or unspecified,
@@ -140,18 +93,18 @@ class Allocator {
 
 	// Default constructor: use template argument as alignment
 	Allocator() {
-		set_alignment(Alignment);
+		setAlignment(Alignment);
 	}
 
 	// Copy constructor: copy alignment from other allocator
 	Allocator(const Allocator& other) {
-		set_alignment(other.alignment_);
+		setAlignment(other.alignment_);
 	}
 
 	// Rebinding constructor, for making allocators of different types
 	template <typename U> 
 	Allocator(const Allocator<U>& other) {
-		set_alignment(other.alignment_);
+		setAlignment(other.alignment_);
 	}
 
 	~Allocator() { }
@@ -171,14 +124,14 @@ class Allocator {
 		aligned::free( static_cast<void*>(p) );
 	}
 
-	size_type get_alignment() const noexcept {
+	size_type getAlignment() const noexcept {
 		return alignment_;
 	}
 
  private:
 	size_type alignment_ = 0;
 
-	void set_alignment(const size_type alignment) {
+	void setAlignment(const size_type alignment) {
 		if ( alignment != 0 ) {
 			alignment_ = alignment;
 		}
