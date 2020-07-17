@@ -19,7 +19,7 @@ endif()
 
 # Add source files
 file(GLOB_RECURSE LIB_NUMERIC_SRC "${CMAKE_CURRENT_LIST_DIR}/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/*.h")
-target_sources(numeric PUBLIC ${LIB_NUMERIC_SRC})
+target_sources(numeric PRIVATE ${LIB_NUMERIC_SRC})
 
 # GPTL
 if(GPTL_ENABLED)
@@ -31,6 +31,7 @@ if(GPTL_ENABLED)
 		# TODO: flags on different systems
 		# TODO: public or private?
 		target_compile_options(numeric PRIVATE -finstrument-functions)
+		#target_compile_options(numeric PUBLIC -finstrument-functions)
 		target_link_options(numeric PUBLIC -finstrument-functions)
 		target_link_options(numeric PUBLIC -rdynamic)
 	endif()
