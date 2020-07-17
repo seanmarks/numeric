@@ -27,9 +27,10 @@ int main(int argc, char* argv[])
 	static constexpr int Y_DIM = CommonTypes::Y_DIM;
 	static constexpr int Z_DIM = CommonTypes::Z_DIM;
 	static constexpr int N_DIM = CommonTypes::N_DIM;
-	using Real    = CommonTypes::Real;
-	using Complex = CommonTypes::Complex;
-	using Real3   = CommonTypes::Real3;
+	using Real     = CommonTypes::Real;
+	using Complex  = CommonTypes::Complex;
+	using Real3    = CommonTypes::Real3;
+	using Complex3 = CommonTypes::Complex3;
 
 	using VectorReal3    = CommonTypes::VectorReal3;
 	using VectorComplex  = CommonTypes::VectorComplex;
@@ -61,7 +62,8 @@ int main(int argc, char* argv[])
 	int num_points = 1000;
 
 	// Number of iterations to perform
-	int num_iterations = 10000;
+	int num_iterations = 100;
+	//int num_iterations = 1000;
 	//int num_iterations = 200000;
 	//int num_iterations = 1000000;
 
@@ -116,22 +118,40 @@ int main(int argc, char* argv[])
 	}
 
 
-	//----- Old Implementation -----//
+	//----- Run Benchmark -----//
 
 	bool do_fast_harmonics = true;
 	bool need_derivatives  = true;
 	SphericalHarmonics sph_harmonics(l, do_fast_harmonics);
 
+	// Old approach
 	Vector<SphericalHarmonicsOutput> old_outputs(num_points);
-
 	timer_old.start();
 	for ( int k=0; k<num_iterations; ++k ) {
+		if ( k % 10 == 0 ) {
+			std::cout << "old iteration: " << k << std::endl;  // FIXME DEBUG
+		}
 		for ( int i=0; i<num_points; ++i ) {
 			sph_harmonics.calculate_Y_l( points[i], norms[i], need_derivatives,
 			                             old_outputs[i].Y_l, old_outputs[i].derivs_Y_l );
 		}
 	}
 	timer_old.stop();
+	std::cout << "Done old" << std::endl;  // FIXME DEBUG
+
+	// New approach
+	Matrix<Complex>  Y_l;
+	Matrix<Complex3> derivs_Y_l;
+	timer_new.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		if ( k % 10 == 0 ) {
+			std::cout << "new iteration: " << k << std::endl;  // FIXME DEBUG
+		}
+		sph_harmonics.calculate( points, norms, need_derivatives,
+		                         Y_l, derivs_Y_l );
+	}
+	timer_new.stop();
+	std::cout << "Done new" << std::endl;  // FIXME DEBUG
 
 	comparePerformance(header, 0.0, timer_new, timer_old);
 

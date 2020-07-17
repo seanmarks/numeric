@@ -181,7 +181,7 @@ void SphericalHarmonics::calculate(
 	//FANCY_ASSERT( r > 0.0, "invalid input: r = " << r );
 	
 	// Ensure enough memory has been allocated
-	int len = x.size();
+	const int len = x.size();
 	Y_l.resize(len, num_m_values_);
 	if ( need_derivatives ) { derivs_Y_l.resize(len, num_m_values_); }
 
