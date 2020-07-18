@@ -27,10 +27,7 @@ class Matrix
  public:
 	static_assert(std::is_same<T, typename Vector::value_type>::value, "type mismatch");
 
-	static constexpr int X_DIM = 0;
-	static constexpr int Y_DIM = 1;
 	static constexpr int N_DIM = 2;
-
 	using Int2 = std::array<int,N_DIM>;
 
 
@@ -40,15 +37,11 @@ class Matrix
 		this->clear();
 	}
 
-	Matrix(const Int2& shape): 
-		shape_(shape)
-	{
-		setShape(shape);
+	Matrix(const Int2& shape) {
+		resize(shape);
 	}
 
-	Matrix(const Int2& shape, const T& value): 
-		shape_(shape)
-	{
+	Matrix(const Int2& shape, const T& value) {
 		setShape(shape);
 		assign(value);
 	}
@@ -57,26 +50,30 @@ class Matrix
 	//----- Size Management -----//
 
 	// Set size
-	void setShape(const Int2& shape) {
+	void resize(const int num_rows, const int num_cols) {
+		FANCY_DEBUG_ASSERT(num_rows >= 0, "invalid num rows: " << num_rows);
+		FANCY_DEBUG_ASSERT(num_cols >= 0, "invalid num cols: " << num_cols);
+
 		// Allocate memory
-		int len = shape[X_DIM]*shape[Y_DIM];
+		int len = num_rows*num_cols;
 		data_.resize(len);
 
-		shape_ = shape;
-	}
-	void setShape(const int num_rows, const int num_cols) {
-		setShape( {{num_rows, num_cols}} );
+		num_rows_ = num_rows;
+		num_cols_ = num_cols;
 	}
 	void resize(const Int2& shape) {
-		setShape(shape);
+		resize(shape[ROW], shape[COL]);
 	}
-	void resize(const int num_rows, const int num_cols) {
-		setShape( {{num_rows, num_cols}} );
+	void setShape(const int num_rows, const int num_cols) {
+		resize(num_rows, num_cols);
+	}
+	void setShape(const Int2& shape) {
+		resize(shape);
 	}
 
 	// Get size(s)
 	const Int2& getShape() const {
-		return shape_;
+		return {{ num_rows_, num_cols_ }}; 
 	}
 
 
@@ -88,7 +85,7 @@ class Matrix
 	}
 
 	void assign(const Int2& shape, const T& value) {
-		this->setShape(shape);  // also resize the array
+		this->resize(shape);
 		this->assign(value);
 	}
 
@@ -99,7 +96,8 @@ class Matrix
 	// Clear all contents
 	void clear() {
 		data_.clear();
-		shape_.fill(0);
+		num_rows_ = 0;
+		num_cols_ = 0;
 	}
 
 
@@ -140,20 +138,20 @@ class Matrix
 	T& operator()(const int i, const int j) {
 		FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
 		                    "indices (" << i << "," << j << ") are out of bounds "
-		                    << "(" shape_[X_DIM] << "," << shape_[Y_DIM] << ")" );
+		                    << "(" num_rows_ << "," << num_cols_ << ")" );
 		return data_[ getLinearIndex(i,j) ];
 	}
 	const T& operator()(const int i, const int j) const {
-		// TODO DEBUG MODE: check bounds
+		FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
+		                    "indices (" << i << "," << j << ") are out of bounds "
+		                    << "(" num_rows_ << "," << num_cols_ << ")" );
 		return data_[ getLinearIndex(i,j) ];
 	}
 	T& operator()(const Int2& indices) {
-		// TODO DEBUG MODE: check bounds
-		return data_[ getLinearIndex(indices) ];
+		return (*this)(indices[ROW], indices[COL]);
 	}
 	const T& operator()(const Int2& indices) const {
-		// TODO DEBUG MODE: check bounds
-		return data_[ getLinearIndex(indices) ];
+		return (*this)(indices[ROW], indices[COL]);
 	}
 
 	// Underlying 1D array (use with caution!)
@@ -186,7 +184,7 @@ class Matrix
 
 	// Between two arrays
 	Matrix& operator+=(const Matrix& other) {
-		// TODO DEBUG MODE: check shape
+		// TODO DEBUG MODE: check dimensions
 		int len = this->data_.size();
 		#pragma omp parallel for \
 			default(shared) schedule(static,10)
@@ -226,17 +224,21 @@ class Matrix
 
 
  protected:
+	static constexpr int ROW = 0;
+	static constexpr int COL = 1;
+
 	// Map from 2D indices to 1D index of underlying array
 	int getLinearIndex(const int i, const int j) const noexcept {
-		return i*shape_[Y_DIM] + j;
+		return i*num_cols_ + j;
 	}
 	int getLinearIndex(const Int2& indices) const noexcept {
-		return getLinearIndex( indices[X_DIM], indices[Y_DIM] );
+		return getLinearIndex( indices[ROW], indices[COL] );
 	}
 
  private:
-	Vector data_;    // underlying 1D array
-	Int2   shape_;   // array dimensions
+	Vector data_;  // underlying 1D array
+	int    num_rows_ = 0;
+	int    num_cols_ = 0;
 };
 
 

@@ -21,6 +21,16 @@ endif()
 file(GLOB_RECURSE LIB_NUMERIC_SRC "${CMAKE_CURRENT_LIST_DIR}/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/*.h")
 target_sources(numeric PRIVATE ${LIB_NUMERIC_SRC})
 
+# FIXME DEBUG
+if(VERBOSE_VECTORIZE_FLAGS)
+	# Verbose vectorizer output only for specific files
+	set_source_files_properties(
+			SphericalHarmonics.cpp
+		PROPERTIES
+			COMPILE_OPTIONS "${VERBOSE_VECTORIZE_FLAGS}"
+	)
+endif()
+
 # GPTL
 if(GPTL_ENABLED)
 	target_compile_definitions(numeric PUBLIC HAVE_GPTL=1)

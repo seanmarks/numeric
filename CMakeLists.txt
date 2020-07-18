@@ -134,11 +134,17 @@ set(NUMERIC_OPT_RELEASE_FLAGS -O3 -ffast-math -march=native)
 #list(APPEND NUMERIC_OPT_RELEASE_FLAGS -ftree-vectorize)
 
 # FIXME DEBUG
+# Control verbosity of feedback from auto-vectorizer
 option(VERBOSE_VECTORIZE "" OFF)
-if(GNU AND VERBOSE_VECTORIZE)
-	#list(APPEND NUMERIC_OPT_RELEASE_FLAGS -fopt-info-vec-missed)
-	list(APPEND NUMERIC_OPT_RELEASE_FLAGS -fopt-info-vec-optimized)
-	list(APPEND NUMERIC_OPT_RELEASE_FLAGS -ftree-vectorizer-verbose=1)
+set(VERBOSE_VECTORIZE_FLAGS "")
+# FIXME: if(GNU) not being recognized
+if(TRUE)
+	list(APPEND VERBOSE_VECTORIZE_FLAGS -fopt-info-vec-optimized)
+	list(APPEND VERBOSE_VECTORIZE_FLAGS -ftree-vectorizer-verbose=1)
+
+	if(VERBOSE_VECTORIZE)
+		list(APPEND NUMERIC_OPT_RELEASE_FLAGS ${VERBOSE_VECTORIZE_FLAGS})
+	endif()
 endif()
 
 
