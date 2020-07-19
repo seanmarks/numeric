@@ -182,9 +182,11 @@ void SphericalHarmonics::calculate(
 	
 	// Ensure enough memory has been allocated
 	const int num_points = x.size();
-	Y_l.resize(num_points, num_m_values_);
+	Y_l.resize(num_m_values_, num_points);
+	//Y_l.resize(num_points, num_m_values_);
 	if ( need_derivatives ) {
-		derivs_Y_l.resize(num_points, num_m_values_);
+		derivs_Y_l.(num_m_values_, num_points);
+		//derivs_Y_l.resize(num_points, num_m_values_);
 	}
 
 
@@ -250,8 +252,7 @@ void SphericalHarmonics::calculate(
 	}
 
 	// Compute the Legendre polynomials and their derivatives
-	// - TODO: is matrix version notably faster?
-	p_x_.resize(num_points, num_m_values_);
+	//p_x_.resize(num_points, num_m_values_);
 	legendreP_matrix_function_(eta_, p_x_);
 
 
@@ -379,8 +380,8 @@ void SphericalHarmonics::legendreP0(const Vector<double>& x, Matrix<double>& p) 
 void SphericalHarmonics::legendreP3(const Vector<double>& x, Matrix<double>& p) const
 {
 	const int num_points = x.size();
-	static constexpr int num_cols = 4;
-	p.resize(num_points, num_cols);
+	static constexpr int num_m_values = 4;
+	p.resize(num_points, num_m_values);
 
 	// TODO OPENMP CHUNKSIZE
 	#pragma omp parallel for
@@ -397,8 +398,8 @@ void SphericalHarmonics::legendreP3(const Vector<double>& x, Matrix<double>& p) 
 void SphericalHarmonics::legendreP4(const Vector<double>& x, Matrix<double>& p) const
 {
 	const int num_points = x.size();
-	static constexpr int num_cols = 5;
-	p.resize(num_points, num_cols);
+	static constexpr int num_m_values = 5;
+	p.resize(num_points, num_m_values);
 
 	// TODO OPENMP CHUNKSIZE
 	#pragma omp parallel for
@@ -416,8 +417,48 @@ void SphericalHarmonics::legendreP4(const Vector<double>& x, Matrix<double>& p) 
 void SphericalHarmonics::legendreP6(const Vector<double>& x, Matrix<double>& p) const
 {
 	const int num_points = x.size();
-	static constexpr int num_cols = 7;
-	p.resize(num_points, num_cols);
+	static constexpr int num_m_values = 7;
+	p.resize(num_m_values, num_points);
+	x2_.resize(num_points);
+
+	// TODO OPENMP CHUNKSIZE
+	#pragma omp parallel
+	{
+		#pragma omp for simd
+		for ( int i=0; i<num_points; ++i ) {
+			x2_[i] = x[i]*x[i];
+			p(0,i) = COEFF_P6*(x2_[i]*(x2_[i]*(231.0*x2_[i] - 315.0) + 105.0) - 5.0);
+		}
+		#pragma omp for simd
+		for ( int i=0; i<num_points; ++i ) {
+			p(1,i) = COEFF_D1_P6*x[i]*(x2_[i]*(33.0*x2_[i] - 30.0) + 5.0);
+		}
+		#pragma omp for simd
+		for ( int i=0; i<num_points; ++i ) {
+			p(2,i) = COEFF_D2_P6*(x2_[i]*(33.0*x2_[i] - 18.0) + 1.0);
+		}
+		#pragma omp for simd
+		for ( int i=0; i<num_points; ++i ) {
+			p(3,i) = COEFF_D3_P6*x[i]*(11.0*x2_[i] - 3.0);
+		}
+		#pragma omp for simd
+		for ( int i=0; i<num_points; ++i ) {
+			p(4,i) = COEFF_D4_P6*(11.0*x2_[i] - 1.0);
+		}
+		#pragma omp for simd
+		for ( int i=0; i<num_points; ++i ) {
+			p(5,i) = COEFF_D5_P6*x[i];
+		}
+		#pragma omp for simd
+		for ( int i=0; i<num_points; ++i ) {
+			p(6,i) = COEFF_D6_P6;
+		}
+	}
+
+	/*
+	const int num_points = x.size();
+	static constexpr int num_m_values = 7;
+	p.resize(num_points, num_m_values);
 
 	// TODO OPENMP CHUNKSIZE
 	#pragma omp parallel for
@@ -433,6 +474,7 @@ void SphericalHarmonics::legendreP6(const Vector<double>& x, Matrix<double>& p) 
 		p(i,5) = COEFF_D5_P6*x[i];
 		p(i,6) = COEFF_D6_P6;
 	}
+	*/
 }
 
  

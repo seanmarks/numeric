@@ -246,6 +246,8 @@ class SphericalHarmonics
 	mutable Vector<Complex> zeta_;
 	mutable Matrix<Complex> zeta_m_minus_1_;
 
+	mutable Vector<double> x2_;
+
 	mutable VectorReal3    deriv_eta_;
 	mutable VectorComplex3 deriv_zeta_;
 };
