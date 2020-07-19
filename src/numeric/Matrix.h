@@ -37,6 +37,10 @@ class Matrix
 		this->clear();
 	}
 
+	Matrix(const int num_rows, const int num_cols) {
+		resize(num_rows, num_cols);
+	}
+
 	Matrix(const Int2& shape) {
 		resize(shape);
 	}
@@ -135,22 +139,13 @@ class Matrix
 	//----- Data access -----//
 
 	// Individual elements
-	T& operator()(const int i, const int j) {
-		FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
-		                    "indices (" << i << "," << j << ") are out of bounds "
-		                    << "(" num_rows_ << "," << num_cols_ << ")" );
-		return data_[ getLinearIndex(i,j) ];
-	}
-	const T& operator()(const int i, const int j) const {
-		FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
-		                    "indices (" << i << "," << j << ") are out of bounds "
-		                    << "(" num_rows_ << "," << num_cols_ << ")" );
-		return data_[ getLinearIndex(i,j) ];
-	}
-	T& operator()(const Int2& indices) {
+	T&       operator()(const int i, const int j) noexcept;
+	const T& operator()(const int i, const int j) const noexcept;
+
+	T& operator()(const Int2& indices) noexcept {
 		return (*this)(indices[ROW], indices[COL]);
 	}
-	const T& operator()(const Int2& indices) const {
+	const T& operator()(const Int2& indices) const noexcept {
 		return (*this)(indices[ROW], indices[COL]);
 	}
 
@@ -228,18 +223,54 @@ class Matrix
 	static constexpr int COL = 1;
 
 	// Map from 2D indices to 1D index of underlying array
-	int getLinearIndex(const int i, const int j) const noexcept {
-		return i*num_cols_ + j;
-	}
-	int getLinearIndex(const Int2& indices) const noexcept {
-		return getLinearIndex( indices[ROW], indices[COL] );
-	}
+	int getLinearIndex(const int i, const int j) const noexcept;
+	int getLinearIndex(const Int2& indices)      const noexcept;
 
  private:
 	Vector data_;  // underlying 1D array
 	int    num_rows_ = 0;
 	int    num_cols_ = 0;
 };
+
+
+template<typename T, typename V>
+inline
+T& Matrix<T,V>::operator()(const int i, const int j) noexcept
+{
+	FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
+											"indices (" << i << "," << j << ") are out of bounds "
+											<< "(" num_rows_ << "," << num_cols_ << ")" );
+	return data_[ getLinearIndex(i,j) ];
+	//return data_[ i*num_cols_ + j ];
+}
+
+
+template<typename T, typename V>
+inline
+const T& Matrix<T,V>::operator()(const int i, const int j) const noexcept
+{
+	FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
+											"indices (" << i << "," << j << ") are out of bounds "
+											<< "(" num_rows_ << "," << num_cols_ << ")" );
+	return data_[ getLinearIndex(i,j) ];
+	//return data_[ i*num_cols_ + j ];
+}
+
+
+template<typename T, typename V>
+inline
+int Matrix<T,V>::getLinearIndex(const int i, const int j) const noexcept
+{
+	return i*num_cols_ + j;
+}
+
+
+template<typename T, typename V>
+inline
+int Matrix<T,V>::getLinearIndex(const Int2& indices) const noexcept
+{
+	return getLinearIndex( indices[ROW], indices[COL] );
+}
 
 
 //----- Friend Functions -----//

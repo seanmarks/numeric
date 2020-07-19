@@ -135,9 +135,11 @@ int main(int argc, char* argv[])
 	Vector<SphericalHarmonicsOutput> old_outputs(num_points);
 	timer_old.start();
 	for ( int k=0; k<num_iterations; ++k ) {
+		/*
 		if ( k % 10 == 0 ) {
 			std::cout << "old iteration: " << k << std::endl;  // FIXME DEBUG
 		}
+		*/
 		for ( int i=0; i<num_points; ++i ) {
 			sph_harmonics.calculate_Y_l( points[i], norms[i], need_derivatives,
 			                             old_outputs[i].Y_l, old_outputs[i].derivs_Y_l );
@@ -147,13 +149,15 @@ int main(int argc, char* argv[])
 	std::cout << "Done old" << std::endl;  // FIXME DEBUG
 
 	// New approach
-	Matrix<Complex>  Y_l;
-	Matrix<Complex3> derivs_Y_l;
+	Matrix<Complex>  Y_l(num_points, l+1);
+	Matrix<Complex3> derivs_Y_l(num_points, l+1);
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
+		/*
 		if ( k % 10 == 0 ) {
 			std::cout << "new iteration: " << k << std::endl;  // FIXME DEBUG
 		}
+		*/
 		sph_harmonics.calculate( points, norms, need_derivatives,
 		                         Y_l, derivs_Y_l );
 	}

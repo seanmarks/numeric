@@ -128,7 +128,7 @@ void SphericalHarmonics::calculate_Y_l(
 
 	// m > 0
 	Complex zeta_m_minus_1 = Complex(1.0, 0.0);
-	for ( int m=1; m<=l_; ++m ) {
+	for ( int m=1; m<=l_; ++m ) {  // TODO VEC CONTROL FLOW
 
 		Y_l[m] = coeff_Y_l_[m]*zeta*zeta_m_minus_1*p_x[m];
 
@@ -193,82 +193,101 @@ void SphericalHarmonics::calculate(
 	// Imaginary unit
 	const Complex i = Complex(0.0, 1.0);
 
+	inv_r_.resize(num_points);
+	xhat_.resize(num_points);
+	yhat_.resize(num_points);
+	eta_.resize(num_points);
+	zeta_.resize(num_points);
+	zeta_m_minus_1_.resize(num_points, l_+1);
+	if ( need_derivatives ) {
+		deriv_eta_.resize(num_points);
+		deriv_zeta_.resize(num_points);
+	}
+
 	#pragma omp parallel
 	{
 		// TODO: chunk size
 		//int chunk_size = 
-		#pragma omp for 
-		for ( int j=0; j<num_points; ++j ) {
+		#pragma omp for simd
+		for ( int j=0; j<num_points; ++j ) {  // OPT
 			// Floating-point multiplication is faster than floating-point division
-			double inv_r = 1.0/r[j];
+			inv_r_[j] = 1.0/r[j];
 
 			// Unit vector in direction of position vector x
-			Real3 xhat;
-			for ( int d=0; d<N_DIM; ++d ) {
-				xhat[d] = x[j][d]*inv_r;
-			}
+			xhat_[j] = x[j][X_DIM]*inv_r_[j];
+			yhat_[j] = x[j][Y_DIM]*inv_r_[j];
+			eta_[j]  = x[j][Z_DIM]*inv_r_[j];  // eta = cos(theta) = z/r = zhat
 
 			// zeta = (x + i*y)/r = xhat + i*yhat
-			Complex zeta = Complex(xhat[X_DIM], xhat[Y_DIM]);
+			zeta_[j] = Complex(xhat_[j], yhat_[j]);  // OPT?
+		}
 
-			// eta = cos(theta) = z/r
-			double eta = xhat[Z_DIM];
-
-			// Derivatives (if requested) 
-			Real3    deriv_eta;
-			Complex3 deriv_zeta;
-			double   zhat_times_inv_r = xhat[Z_DIM]*inv_r;
-			if ( need_derivatives ) {
-				deriv_eta[X_DIM] = -xhat[X_DIM]*zhat_times_inv_r;
-				deriv_eta[Y_DIM] = -xhat[Y_DIM]*zhat_times_inv_r;
-				deriv_eta[Z_DIM] = (1.0 - eta*eta)*inv_r;
-
-				deriv_zeta[X_DIM] = (1.0 - xhat[X_DIM]*zeta)*inv_r;
-				deriv_zeta[Y_DIM] = (i - xhat[Y_DIM]*zeta)*inv_r;
-				deriv_zeta[Z_DIM] = -zhat_times_inv_r*zeta;
+		// FIXME VEC
+		#pragma omp for
+		for ( int j=0; j<num_points; ++j ) {  // OPT
+			zeta_m_minus_1_(j,0) = Complex(1.0, 0.0);
+			#pragma omp simd
+			for ( int m=1; m<=l_; ++m ) {
+				zeta_m_minus_1_(j,m) = zeta_m_minus_1_(j,m-1) * zeta_[j];
 			}
+		}
+
+		// Derivatives (if requested) 
+		if ( need_derivatives ) {
+			#pragma omp for simd
+			for ( int j=0; j<num_points; ++j ) {
+				double zhat_times_inv_r = eta_[j]*inv_r_[j];
+
+				deriv_eta_[j][X_DIM] = -xhat_[j]*zhat_times_inv_r;  // OPT
+				deriv_eta_[j][Y_DIM] = -yhat_[j]*zhat_times_inv_r;
+				deriv_eta_[j][Z_DIM] = (1.0 - eta_[j]*eta_[j])*inv_r_[j];
+
+				deriv_zeta_[j][X_DIM] = (1.0 - xhat_[j]*zeta_[j])*inv_r_[j];   // MISSED
+				deriv_zeta_[j][Y_DIM] = (i - yhat_[j]*zeta_[j])*inv_r_[j];
+				deriv_zeta_[j][Z_DIM] = -zhat_times_inv_r*zeta_[j];
+			}
+		}
+	}
+
+	// Compute the Legendre polynomials and their derivatives
+	// - TODO: is matrix version notably faster?
+	p_x_.resize(num_points, num_m_values_);
+	legendreP_matrix_function_(eta_, p_x_);
 
 
-			//----- Compute Y_{l,m} -----//
+	//----- Compute Y_{l,m} -----//
 
-			// First, compute the Legendre polynomials and their derivatives
-			// - TODO: is matrix version notably faster?
-			Vector<double> p_x(num_m_values_);
-			legendreP_function_(eta, p_x);
-
+	#pragma omp parallel
+	{
+		#pragma omp for
+		for ( int j=0; j<num_points; ++j ) {
 			// m = 0
 			int m = 0;
-			Y_l(j,m) = coeff_Y_l_[m]*p_x[m];
+			Y_l(j,m) = coeff_Y_l_[m]*p_x_(j,m);
 			if ( need_derivatives ) {
-				if ( l_ > 0 ) {
-					for ( int d=0; d<N_DIM; ++d ) {
-						derivs_Y_l(j,m)[d] = coeff_Y_l_[m]*p_x[m+1]*deriv_eta[d];
-					}
-				}
-				else {
-					// Y_{0,0} is constant
-					for ( int d=0; d<N_DIM; ++d ) {
-						derivs_Y_l(j,m)[d] = 0.0;
-					}
+				for ( int d=0; d<N_DIM; ++d ) {
+					derivs_Y_l(j,m)[d] = coeff_Y_l_[m]*p_x_(j,m+1)*deriv_eta_[j][d];
 				}
 			}
 
 			// m > 0
-			Complex zeta_m_minus_1 = Complex(1.0, 0.0);
-			for ( int m=1; m<=l_; ++m ) {
-				Y_l(j,m) = coeff_Y_l_[m]*zeta*zeta_m_minus_1*p_x[m];
-
-				if ( need_derivatives ) {
+			//Complex zeta_m_minus_1 = Complex(1.0, 0.0);
+			for ( int m=1; m<=l_; ++m ) {  // TODO: VEC CONTROL FLOW
+				Y_l(j,m) = coeff_Y_l_[m]*zeta_[j]*zeta_m_minus_1_(j,m-1)*p_x_(j,m);
+				//zeta_m_minus_1 *= zeta_[j];  // TODO PRECOMPUTE
+			}
+			if ( need_derivatives ) {
+				//Complex zeta_m_minus_1 = Complex(1.0, 0.0);
+				for ( int m=1; m<=l_; ++m ) {  // TODO: VEC CONTROL FLOW
 					for ( int d=0; d<N_DIM; ++d ) {
-						derivs_Y_l(j,m)[d] = (m*p_x[m])*deriv_zeta[d];
-						if ( m < l_ ) {
-							derivs_Y_l(j,m)[d] += (deriv_eta[d]*p_x[m+1])*zeta;
+						derivs_Y_l(j,m)[d] = m*p_x_(j,m)*deriv_zeta_[j][d];
+						if ( m < l_ ) {  // FIXME
+							derivs_Y_l(j,m)[d] += deriv_eta_[j][d]*p_x_(j,m+1)*zeta_[j];
 						}
-						derivs_Y_l(j,m)[d] *= coeff_Y_l_[m]*zeta_m_minus_1;
+						derivs_Y_l(j,m)[d] *= coeff_Y_l_[m]*zeta_m_minus_1_(j,m-1);
 					}
+					//zeta_m_minus_1 *= zeta_[j];
 				}
-
-				zeta_m_minus_1 *= zeta;
 			}
 		}  // end loop over positions
 
@@ -277,7 +296,7 @@ void SphericalHarmonics::calculate(
 		if ( ! do_fast_harmonics_ ) {
 			#pragma omp for
 			for ( int j=0; j<num_points; ++j ) {
-				for ( int m=1; m<=l_; m++ ) {
+				for ( int m=1; m<=l_; m++ ) {  // TODO: VEC CONTROL FLOW
 					int index = l_ + m;
 					if ( m % 2 == 0 ) {
 						Y_l(j,index) = std::conj( Y_l(j,m) );

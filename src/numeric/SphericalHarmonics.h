@@ -241,10 +241,13 @@ class SphericalHarmonics
 
 	// Buffers
 	// - TODO: make use of these somehow?
-	mutable Vector<double>  inv_r_;
-	mutable Vector<Real3>   xhat_;
-	mutable Vector<Complex> zeta_, zeta_m_minus_1_;
+	mutable Vector<double>  inv_r_, xhat_, yhat_, eta_;
 	mutable Matrix<double>  p_x_;
+	mutable Vector<Complex> zeta_;
+	mutable Matrix<Complex> zeta_m_minus_1_;
+
+	mutable VectorReal3    deriv_eta_;
+	mutable VectorComplex3 deriv_zeta_;
 };
 
 #endif // SPHERICAL_HARMONICS_H

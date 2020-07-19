@@ -140,6 +140,7 @@ set(VERBOSE_VECTORIZE_FLAGS "")
 # FIXME: if(GNU) not being recognized
 if(TRUE)
 	list(APPEND VERBOSE_VECTORIZE_FLAGS -fopt-info-vec-optimized)
+	list(APPEND VERBOSE_VECTORIZE_FLAGS -fopt-info-vec-missed)
 	list(APPEND VERBOSE_VECTORIZE_FLAGS -ftree-vectorizer-verbose=1)
 
 	if(VERBOSE_VECTORIZE)
