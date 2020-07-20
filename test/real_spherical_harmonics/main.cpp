@@ -85,8 +85,9 @@ int main(int argc, char* argv[])
 	if ( argc > 2 ) {
 		num_iterations = std::stoi( args[2] );
 	}
-	FANCY_ASSERT(num_iterations >= 1, "invalid length");
+	FANCY_ASSERT(num_iterations >= 1, "invalid iteration count");
 
+	// Total number of points to sample
 	int num_points = num_samples_per_angle*num_samples_per_angle;
 
 	std::cout << "Setup\n"
@@ -150,8 +151,9 @@ int main(int argc, char* argv[])
 	std::cout << "Done old" << std::endl;  // FIXME DEBUG
 
 	// New approach
-	Matrix<Complex>  Y_l(num_points, l+1);
-	Matrix<Complex3> derivs_Y_l(num_points, l+1);
+	RealSphericalHarmonics real_sph_harmonics(l);
+	Matrix<double>  y_l(num_samples_per_angle, 2*l+1);
+	Matrix<Real3>  derivs_y_l(num_samples_per_angle, 2*l+1);
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		/*
@@ -159,13 +161,38 @@ int main(int argc, char* argv[])
 			std::cout << "new iteration: " << k << std::endl;  // FIXME DEBUG
 		}
 		*/
-		sph_harmonics.calculate( points, norms, need_derivatives,
-		                         Y_l, derivs_Y_l );
+		real_sph_harmonics.calculate( points, norms, need_derivatives,
+		                              y_l, derivs_y_l );
 	}
 	timer_new.stop();
 	std::cout << "Done new" << std::endl;  // FIXME DEBUG
 
 	comparePerformance(header, 0.0, timer_new, timer_old);
+
+	/*
+	// Sample values
+	Complex alpha = {{ 1.0,  2.0 }};
+	Complex beta  = {{ 3.0, -4.0 }};
+	Complex one   = {{ 1.0,  0.0 }};
+	//Complex unit  = {{ 1.0/sqrt(2.0), -1.0/sqrt(2.0) }};
+	Complex unit  = {{ 0.0, -1.0 }};
+	StdVectorComplex u_old(num_samples_per_angle, alpha);  ComplexVector u_new      = u_old;
+	StdVectorComplex v_old(num_samples_per_angle, beta);   ComplexVector v_new      = v_old;
+	StdVectorComplex output_old(num_samples_per_angle);    ComplexVector output_new = output_old;
+
+	std::cout << "//----- Vector <op> Vector -----//" << std::endl;
+
+
+	timer_new.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		aligned::simd::complex::add(u_new.data(), v_new.data(), num_samples_per_angle, output_new.data());
+	}
+	timer_new.stop();
+	std::cout << "  u_new[0] = " << Complex(u_new[0]) << std::endl;
+
+	check(output_new, output_old);
+	comparePerformance(header, 0.0, timer_new, timer_old);
+	*/
 
 
 	// GPTL: done
