@@ -60,9 +60,9 @@ int main(int argc, char* argv[])
 	//----- Testing -----//
 	//-------------------//
 
-	std::cout << "//------------------------------//" << std::endl;
-	std::cout << "//----- SphericalHarmonics -----//" << std::endl;
-	std::cout << "//------------------------------//" << std::endl;
+	std::cout << "//----------------------------------//" << std::endl;
+	std::cout << "//----- RealSphericalHarmonics -----//" << std::endl;
+	std::cout << "//----------------------------------//" << std::endl;
 	std::cout  << std::endl;
 
 	// Number of values
@@ -137,63 +137,35 @@ int main(int argc, char* argv[])
 	std::vector<SphericalHarmonicsOutput> old_outputs(num_points);
 	timer_old.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		/*
-		if ( k % 10 == 0 ) {
-			std::cout << "old iteration: " << k << std::endl;  // FIXME DEBUG
-		}
-		*/
 		for ( int i=0; i<num_points; ++i ) {
 			sph_harmonics.calculate_Y_l( points[i], norms[i], need_derivatives,
 			                             old_outputs[i].Y_l, old_outputs[i].derivs_Y_l );
 		}
 	}
 	timer_old.stop();
-	std::cout << "Done old" << std::endl;  // FIXME DEBUG
 
-	// New approach
+
 	RealSphericalHarmonics real_sph_harmonics(l);
-	Matrix<double>  y_l(num_samples_per_angle, 2*l+1);
-	Matrix<Real3>  derivs_y_l(num_samples_per_angle, 2*l+1);
+	Matrix<double> y_l,        y_l_T;
+	Matrix<Real3>  derivs_y_l, derivs_y_l_T;
+
+	// New approach #1
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		/*
-		if ( k % 10 == 0 ) {
-			std::cout << "new iteration: " << k << std::endl;  // FIXME DEBUG
-		}
-		*/
 		real_sph_harmonics.calculate( points, norms, need_derivatives,
 		                              y_l, derivs_y_l );
 	}
 	timer_new.stop();
-	std::cout << "Done new" << std::endl;  // FIXME DEBUG
-
 	comparePerformance(header, 0.0, timer_new, timer_old);
 
-	/*
-	// Sample values
-	Complex alpha = {{ 1.0,  2.0 }};
-	Complex beta  = {{ 3.0, -4.0 }};
-	Complex one   = {{ 1.0,  0.0 }};
-	//Complex unit  = {{ 1.0/sqrt(2.0), -1.0/sqrt(2.0) }};
-	Complex unit  = {{ 0.0, -1.0 }};
-	StdVectorComplex u_old(num_samples_per_angle, alpha);  ComplexVector u_new      = u_old;
-	StdVectorComplex v_old(num_samples_per_angle, beta);   ComplexVector v_new      = v_old;
-	StdVectorComplex output_old(num_samples_per_angle);    ComplexVector output_new = output_old;
-
-	std::cout << "//----- Vector <op> Vector -----//" << std::endl;
-
-
+	// New approach #2
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
-		aligned::simd::complex::add(u_new.data(), v_new.data(), num_samples_per_angle, output_new.data());
+		real_sph_harmonics.calculate_T( points, norms, need_derivatives,
+		                                y_l_T, derivs_y_l_T );
 	}
 	timer_new.stop();
-	std::cout << "  u_new[0] = " << Complex(u_new[0]) << std::endl;
-
-	check(output_new, output_old);
 	comparePerformance(header, 0.0, timer_new, timer_old);
-	*/
-
 
 	// GPTL: done
 	gptl_timer.stop();

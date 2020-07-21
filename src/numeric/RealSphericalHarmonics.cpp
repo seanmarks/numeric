@@ -90,21 +90,21 @@ void RealSphericalHarmonics::calculate(
 		// TODO: CHUNK_SIZE
 		const int chunk_size = 8;
 		#pragma omp for simd schedule(static,chunk_size)
-		for ( int j=0; j<num_points; ++j ) {  // OPT
+		for ( int j=0; j<num_points; ++j ) {
 			// Floating-point multiplication is faster than floating-point division
-			inv_r_[j] = 1.0/r[j];
+			inv_r_[j] = 1.0/r[j];  // OPT
 
 			// Unit vector in direction of position vector x
-			xhat_[j] = x[j][X_DIM]*inv_r_[j];
+			xhat_[j] = x[j][X_DIM]*inv_r_[j];  // MISSED?
 			yhat_[j] = x[j][Y_DIM]*inv_r_[j];
-			eta_[j]  = x[j][Z_DIM]*inv_r_[j];  // eta = cos(theta) = z/r = zhat
+			eta_[j]  = x[j][Z_DIM]*inv_r_[j];  // eta = cos(theta) = z/r = zhat  // MISSED
 		}
 
 		if ( need_derivatives ) {
 			const int chunk_size = 8;
 			#pragma omp for simd schedule(static,chunk_size)
 			for ( int j=0; j<num_points; ++j ) {
-				double zhat_times_inv_r = eta_[j]*inv_r_[j];
+				double zhat_times_inv_r = eta_[j]*inv_r_[j];  // OPT
 
 				deriv_eta_[X_DIM][j] = -xhat_[j]*zhat_times_inv_r;
 				deriv_eta_[Y_DIM][j] = -yhat_[j]*zhat_times_inv_r;
@@ -161,7 +161,7 @@ void RealSphericalHarmonics::calculate(
 			// m > 0
 			//Complex zeta_m_minus_1 = Complex(1.0, 0.0);
 			double re_zeta_m_minus_1 = 1.0, im_zeta_m_minus_1 = 0.0;
-			for ( int m=1; m<=l_; ++m ) {
+			for ( int m=1; m<=l_; ++m ) {  // OPT
 				y_l(j,m) = coeff_y_l_[m]*xhat_[j]*xhat_[j]*p_x_(j,m);  // FIXME
 				//y_l(j,m) = coeff_y_l_[m]*zeta_[j]*zeta_m_minus_1_(j,m-1)*p_x_(j,m);
 			}
@@ -248,6 +248,177 @@ void RealSphericalHarmonics::calculate(
 		}
 	} // end pragma omp parallel
 */
+}
+
+
+void RealSphericalHarmonics::calculate_T(
+		const VectorReal3& x, const Vector<double>& r, const bool need_derivatives,
+		Matrix<double>& y_l, Matrix<Real3>& derivs_y_l
+) const
+{
+	FANCY_ASSERT( legendre_ptr_ != nullptr, "missing object");
+	FANCY_ASSERT( legendre_ptr_->getHarmonicIndex() == l_, "harmonic index mismatch" );
+
+	// Ensure enough memory has been allocated
+	const int num_points = x.size();
+	y_l.resize(2*l_+1, num_points);
+	if ( need_derivatives ) {
+		derivs_y_l.resize(2*l_+1, num_points);
+	}
+
+	inv_r_.resize(num_points);
+	xhat_.resize(num_points);
+	yhat_.resize(num_points);
+	eta_.resize(num_points);
+	if ( need_derivatives ) {
+		for ( int d=0; d<N_DIM; ++d ) {
+			re_deriv_zeta_[d].resize(num_points);
+			im_deriv_zeta_[d].resize(num_points);
+			deriv_eta_[d].resize(num_points);
+		}
+		/*
+		re_deriv_zeta_.resize(num_points);
+		im_deriv_zeta_.resize(num_points);
+		deriv_eta_.resize(num_points);
+		*/
+	}
+
+	#pragma omp parallel
+	{
+		// TODO: CHUNK_SIZE
+		const int chunk_size = 8;
+		#pragma omp for simd schedule(static,chunk_size)
+		for ( int j=0; j<num_points; ++j ) {
+			// Floating-point multiplication is faster than floating-point division
+			inv_r_[j] = 1.0/r[j];  // OPT
+
+			// Unit vector in direction of position vector x
+			xhat_[j] = x[j][X_DIM]*inv_r_[j];  // MISSED?
+			yhat_[j] = x[j][Y_DIM]*inv_r_[j];
+			eta_[j]  = x[j][Z_DIM]*inv_r_[j];  // eta = cos(theta) = z/r = zhat  // MISSED
+		}
+
+		if ( need_derivatives ) {
+			const int chunk_size = 8;
+			#pragma omp for simd schedule(static,chunk_size)
+			for ( int j=0; j<num_points; ++j ) {
+				double zhat_times_inv_r = eta_[j]*inv_r_[j];  // OPT
+
+				deriv_eta_[X_DIM][j] = -xhat_[j]*zhat_times_inv_r;
+				deriv_eta_[Y_DIM][j] = -yhat_[j]*zhat_times_inv_r;
+				deriv_eta_[Z_DIM][j] = (1.0 - eta_[j]*eta_[j])*inv_r_[j];
+
+				re_deriv_zeta_[X_DIM][j] = inv_r_[j]*(1.0 - xhat_[j]*xhat_[j]);
+				re_deriv_zeta_[Y_DIM][j] = -inv_r_[j]*xhat_[j]*yhat_[j];
+				re_deriv_zeta_[Z_DIM][j] = deriv_eta_[X_DIM][j];
+
+				im_deriv_zeta_[X_DIM][j] = re_deriv_zeta_[Y_DIM][j];
+				im_deriv_zeta_[Y_DIM][j] = inv_r_[j]*(1.0 - yhat_[j]*yhat_[j]);
+				im_deriv_zeta_[Z_DIM][j] = deriv_eta_[Y_DIM][j];  // MISSED?
+
+				/*
+				// FIXME: alternative layout
+
+				deriv_eta_[j][X_DIM] = -xhat_[j]*zhat_times_inv_r;
+				deriv_eta_[j][Y_DIM] = -yhat_[j]*zhat_times_inv_r;
+				deriv_eta_[j][Z_DIM] = (1.0 - eta_[j]*eta_[j])*inv_r_[j];
+
+				re_deriv_zeta_[j][X_DIM] = inv_r_[j]*(1.0 - xhat_[j]*xhat_[j]);
+				re_deriv_zeta_[j][Y_DIM] = -inv_r_[j]*xhat_[j]*yhat_[j];
+				re_deriv_zeta_[j][Z_DIM] = deriv_eta_[j][X_DIM];
+
+				im_deriv_zeta_[j][X_DIM] = re_deriv_zeta_[j][Y_DIM];
+				im_deriv_zeta_[j][Y_DIM] = inv_r_[j]*(1.0 - yhat_[j]*yhat_[j]);
+				im_deriv_zeta_[j][Z_DIM] = deriv_eta_[j][Y_DIM];
+				*/
+			}
+		}
+	}
+
+	// Compute the Legendre polynomials and their derivatives
+	// - TODO: is matrix version notably faster?
+	legendre_ptr_->calculate_T(eta_, p_x_);
+
+	Vector<double> re_zeta_m(num_points), re_zeta_m_minus_1(num_points, 1.0);
+	Vector<double> im_zeta_m(num_points), im_zeta_m_minus_1(num_points, 0.0);
+
+	#pragma omp parallel
+	{
+		// m = 0
+		int m = 0;
+		#pragma omp for simd schedule(static)
+		for ( int j=0; j<num_points; ++j ) {
+			y_l(m,j) = coeff_y_l_[m]*p_x_(m,j);  // OPT
+		}
+		if ( need_derivatives ) {
+			#pragma omp for simd schedule(static) collapse(2)  // FIXME
+			for ( int j=0; j<num_points; ++j ) {
+				for ( int d=0; d<N_DIM; ++d ) {
+					derivs_y_l(m, j)[d] = coeff_y_l_[m]*p_x_(m+1,j)*deriv_eta_[d][j];  // FIXME: l = 0  // MISSED
+				}
+			}
+		}
+
+		// 0 < m < l
+		for ( int m=1; m<=l_; ++m ) {
+			// zeta^m = cos(m*phi) + i*sin(m*phi)
+			#pragma omp for simd schedule(static)
+			for ( int j=0; j<num_points; ++j ) {
+				re_zeta_m[j] = re_zeta_m_minus_1[j]*xhat_[j] - im_zeta_m_minus_1[j]*yhat_[j];  // cos(m*phi)
+				im_zeta_m[j] = re_zeta_m_minus_1[j]*yhat_[j] + im_zeta_m_minus_1[j]*xhat_[j];  // sin(m*phi)
+			}
+
+			// These loops need to be separate, or the compiler seems to have difficulty
+			// vectorizing them
+			#pragma omp for simd schedule(static)
+			for ( int j=0; j<num_points; ++j ) {
+				// m > 0
+				y_l(m, j) = coeff_y_l_[m]*re_zeta_m[j]*p_x_(m,j);  // OPT
+			}
+			#pragma omp for simd schedule(static)
+			for ( int j=0; j<num_points; ++j ) {
+				// m < 0
+				y_l(m+l_, j) = coeff_y_l_[m]*im_zeta_m[j]*p_x_(m,j);  // OPT
+			}
+
+
+			if ( need_derivatives ) {
+				#pragma omp for simd schedule(static) collapse(2)
+				for ( int j=0; j<num_points; ++j ) {
+					for ( int d=0; d<N_DIM; ++d ) {
+						// FIXME
+						derivs_y_l(m,    j)[d] = m*re_zeta_m_minus_1[j]*re_deriv_zeta_[d][j]*p_x_(m,j);
+						derivs_y_l(m+l_, j)[d] = m*im_zeta_m_minus_1[j]*im_deriv_zeta_[d][j]*p_x_(m,j);
+					}
+				}
+
+				if ( m < l_ ) {
+					#pragma omp for simd schedule(static) collapse(2)
+					for ( int j=0; j<num_points; ++j ) {
+						for ( int d=0; d<N_DIM; ++d ) {
+							derivs_y_l(m,    j)[d] += re_zeta_m[j]*p_x_(m+1,j);
+							derivs_y_l(m+l_, j)[d] += im_zeta_m[j]*p_x_(m+1,j);
+						}
+					}
+				}
+
+				// TODO: rearrange
+				#pragma omp for simd schedule(static) collapse(2)
+				for ( int j=0; j<num_points; ++j ) {
+					for ( int d=0; d<N_DIM; ++d ) {
+						derivs_y_l(m,    j)[d] *= coeff_y_l_[m];
+						derivs_y_l(m+l_, j)[d] *= coeff_y_l_[m];
+					}
+				}
+			}
+
+			if ( m < l_ ) {
+				// Update for next iteration
+				std::swap( re_zeta_m_minus_1, re_zeta_m );
+				std::swap( im_zeta_m_minus_1, im_zeta_m );
+			}
+		}
+	} // end pragma omp parallel
 }
 
 

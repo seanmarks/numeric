@@ -27,6 +27,7 @@ if(VERBOSE_VECTORIZE_FLAGS)
 	set_source_files_properties(
 			Legendre.cpp
 			RealSphericalHarmonics.cpp
+			SphericalHarmonics.cpp
 		PROPERTIES
 			COMPILE_OPTIONS "${VERBOSE_VECTORIZE_FLAGS}"
 	)

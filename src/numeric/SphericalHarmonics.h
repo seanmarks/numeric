@@ -91,6 +91,14 @@ class SphericalHarmonics
 		Matrix<Complex3>& derivs_Y_l
 	) const;
 
+	void calculate_T(
+		const VectorReal3&    x, 
+		const Vector<double>& r, 
+		const bool            need_derivatives,
+		Matrix<Complex>&  Y_l, 
+		Matrix<Complex3>& derivs_Y_l
+	) const;
+
 
 	//----- Get/Set Functions -----//
 

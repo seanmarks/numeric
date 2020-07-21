@@ -213,9 +213,9 @@ void SphericalHarmonics::calculate(
 		// TODO: chunk size
 		//int chunk_size = 
 		#pragma omp for simd
-		for ( int j=0; j<num_points; ++j ) {  // OPT
+		for ( int j=0; j<num_points; ++j ) {
 			// Floating-point multiplication is faster than floating-point division
-			inv_r_[j] = 1.0/r[j];
+			inv_r_[j] = 1.0/r[j];  // OPT
 
 			// Unit vector in direction of position vector x
 			xhat_[j] = x[j][X_DIM]*inv_r_[j];
@@ -223,7 +223,7 @@ void SphericalHarmonics::calculate(
 			eta_[j]  = x[j][Z_DIM]*inv_r_[j];  // eta = cos(theta) = z/r = zhat
 
 			// zeta = (x + i*y)/r = xhat + i*yhat
-			zeta_[j] = Complex(xhat_[j], yhat_[j]);  // OPT?
+			zeta_[j] = Complex(xhat_[j], yhat_[j]);  // MISSED?
 		}
 
 		// FIXME VEC
@@ -315,6 +315,167 @@ void SphericalHarmonics::calculate(
 						if ( need_derivatives ) {
 							for ( int d=0; d<N_DIM; ++d ) {
 								derivs_Y_l(j,index)[d] = std::conj( -derivs_Y_l(j,m)[d] );
+							}
+						}
+					}
+				}
+			}
+		}
+	} // end pragma omp parallel
+}
+
+
+void SphericalHarmonics::calculate_T(
+	const VectorReal3& x, const Vector<double>& r, const bool need_derivatives,
+	Matrix<Complex>& Y_l, Matrix<Complex3>& derivs_Y_l
+) const
+{
+	// TODO: Input checks
+	
+	// Ensure enough memory has been allocated
+	const int num_points = x.size();
+	Y_l.resize(num_m_values_, num_points);
+	if ( need_derivatives ) {
+		derivs_Y_l.resize(num_points, num_m_values_);
+	}
+
+
+	//----- Precompute useful quantities -----//
+
+	// Imaginary unit
+	const Complex i = Complex(0.0, 1.0);
+
+	inv_r_.resize(num_points);
+	xhat_.resize(num_points);
+	yhat_.resize(num_points);
+	eta_.resize(num_points);
+	zeta_.resize(num_points);
+	zeta_m_minus_1_.resize(l_+1, num_points);
+	if ( need_derivatives ) {
+		deriv_eta_.resize(num_points);
+		deriv_zeta_.resize(num_points);
+	}
+
+	#pragma omp parallel
+	{
+		// TODO: chunk size
+		//int chunk_size = 
+		#pragma omp for simd
+		for ( int j=0; j<num_points; ++j ) {  // OPT
+			// Floating-point multiplication is faster than floating-point division
+			inv_r_[j] = 1.0/r[j];  // OPT
+
+			// Unit vector in direction of position vector x
+			xhat_[j] = x[j][X_DIM]*inv_r_[j];
+			yhat_[j] = x[j][Y_DIM]*inv_r_[j];
+			eta_[j]  = x[j][Z_DIM]*inv_r_[j];  // eta = cos(theta) = z/r = zhat
+
+			// zeta = (x + i*y)/r = xhat + i*yhat
+			zeta_[j] = Complex(xhat_[j], yhat_[j]);  // OPT?
+		}
+
+		// FIXME VEC
+		#pragma omp for
+		for ( int j=0; j<num_points; ++j ) {  // OPT
+			zeta_m_minus_1_(j,0) = Complex(1.0, 0.0);
+			#pragma omp simd
+			for ( int m=1; m<=l_; ++m ) {
+				zeta_m_minus_1_(m,j) = zeta_m_minus_1_(m-1,j) * zeta_[j];
+			}
+		}
+
+		// Derivatives (if requested) 
+		if ( need_derivatives ) {
+			#pragma omp for simd
+			for ( int j=0; j<num_points; ++j ) {
+				double zhat_times_inv_r = eta_[j]*inv_r_[j];
+
+				deriv_eta_[j][X_DIM] = -xhat_[j]*zhat_times_inv_r;  // OPT
+				deriv_eta_[j][Y_DIM] = -yhat_[j]*zhat_times_inv_r;
+				deriv_eta_[j][Z_DIM] = (1.0 - eta_[j]*eta_[j])*inv_r_[j];
+
+				deriv_zeta_[j][X_DIM] = (1.0 - xhat_[j]*zeta_[j])*inv_r_[j];   // MISSED
+				deriv_zeta_[j][Y_DIM] = (i - yhat_[j]*zeta_[j])*inv_r_[j];
+				deriv_zeta_[j][Z_DIM] = -zhat_times_inv_r*zeta_[j];
+			}
+		}
+	}
+
+	// Compute the Legendre polynomials and their derivatives
+	legendre_ptr_->calculate_T(eta_, p_x_);
+
+
+	//----- Compute Y_{l,m} -----//
+
+	#pragma omp parallel
+	{
+		// TODO: l = 0
+
+		// m = 0
+		int m = 0;
+		#pragma omp for simd
+		for ( int j=0; j<num_points; ++j ) {
+			Y_l(m,j) = coeff_Y_l_[m]*p_x_(m,j);  // OPT
+		}
+		if ( need_derivatives ) {
+			#pragma omp for simd collapse(2)
+			for ( int j=0; j<num_points; ++j ) {
+				for ( int d=0; d<N_DIM; ++d ) {
+					derivs_Y_l(m,j)[d] = coeff_Y_l_[m]*p_x_(m+1,j)*deriv_eta_[j][d];  // FIXME: l=0 --> max(m)=0
+				}
+			}
+		}
+
+		// 0 < m < l
+		for ( int m=1; m<=l_; ++m ) {  // TODO: VEC CONTROL FLOW
+			#pragma omp for simd
+			for ( int j=0; j<num_points; ++j ) {
+				Y_l(m,j) = coeff_Y_l_[m]*zeta_[j]*zeta_m_minus_1_(m-1,j)*p_x_(m,j);
+			}
+			if ( need_derivatives ) {
+				#pragma omp for simd collapse(2)
+				for ( int j=0; j<num_points; ++j ) {
+					for ( int d=0; d<N_DIM; ++d ) {
+						derivs_Y_l(m,j)[d] = m*p_x_(m,j)*deriv_zeta_[j][d];
+					}
+				}
+				if ( m < l_ ) {
+					#pragma omp for simd collapse(2)
+					for ( int j=0; j<num_points; ++j ) {
+						for ( int d=0; d<N_DIM; ++d ) {
+							derivs_Y_l(m,j)[d] += deriv_eta_[j][d]*p_x_(m+1,j)*zeta_[j];
+						}
+					}
+				}
+				#pragma omp for simd collapse(2)
+				for ( int j=0; j<num_points; ++j ) {
+					for ( int d=0; d<N_DIM; ++d ) {
+						derivs_Y_l(m,j)[d] *= coeff_Y_l_[m]*zeta_m_minus_1_(m-1,j);
+					}
+				}
+			}
+		}  // end loop over positions
+
+		// m < 0
+		// - Note: Y_{l,-m} = (-1)^m * complex_conjugate(Y_{l,m})
+		if ( ! do_fast_harmonics_ ) {
+			for ( int m=1; m<=l_; m++ ) {
+				#pragma omp for
+				for ( int j=0; j<num_points; ++j ) {
+					int index = l_ + m;
+					if ( m % 2 == 0 ) {
+						Y_l(index,j) = std::conj( Y_l(m,j) );
+						if ( need_derivatives ) {
+							for ( int d=0; d<N_DIM; ++d ) {
+								derivs_Y_l(index,j)[d] = std::conj( derivs_Y_l(m,j)[d] );
+							}
+						}
+					}
+					else {
+						Y_l(index,j) = std::conj( -Y_l(m,j) );
+						if ( need_derivatives ) {
+							for ( int d=0; d<N_DIM; ++d ) {
+								derivs_Y_l(index,j)[d] = std::conj( -derivs_Y_l(m,j)[d] );
 							}
 						}
 					}

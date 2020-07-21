@@ -82,6 +82,14 @@ class RealSphericalHarmonics
 		Matrix<Real3>&  derivs_y_l  // FIXME: 3 separate matrices?
 	) const;
 
+	void calculate_T(
+		const VectorReal3&    x,  // (num_points,3)
+		const Vector<double>& r,  // (num_points)
+		const bool            need_derivatives,
+		Matrix<double>& y_l,        // (num_points, l+1)
+		Matrix<Real3>&  derivs_y_l  // FIXME: 3 separate matrices?
+	) const;
+
 
 	//----- Get/Set Functions -----//
 
