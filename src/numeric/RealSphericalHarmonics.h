@@ -161,19 +161,18 @@ class RealSphericalHarmonics
 
 	// Buffers
 	// - TODO: make use of these somehow?
-	mutable Vector<double> inv_r_, xhat_, yhat_, eta_;  // xhat = Re(zeta), yhat = Im(zeta)
-	//mutable Vector<double> re_zeta_,  im_zeta_;
+	mutable Vector<double> inv_r_, xhat_, yhat_, eta_;  // eta = zhat
+
+	// Re(zeta) = xhat, Im(zeta) = yhat
 	mutable std::array<Vector<double>, N_DIM> re_deriv_zeta_, im_deriv_zeta_, deriv_eta_;
+
+	//mutable Vector<double> re_zeta_,  im_zeta_;
 	//mutable VectorReal3    re_deriv_zeta_, im_deriv_zeta_, deriv_eta_;
 
 	mutable Matrix<double>  p_x_;  // Legendre polynomials (and derivatives)
 
-	/*
-	mutable Vector<Complex> zeta_;
-	mutable Matrix<Complex> zeta_m_minus_1_;
-
-	mutable VectorComplex3 deriv_zeta_;
-	*/
+	mutable Vector<double> re_zeta_m_, re_zeta_m_minus_1_;
+	mutable Vector<double> im_zeta_m_, im_zeta_m_minus_1_;
 };
 
 #endif // REAL_SPHERICAL_HARMONICS_H

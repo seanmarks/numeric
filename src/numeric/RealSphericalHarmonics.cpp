@@ -339,8 +339,11 @@ void RealSphericalHarmonics::calculate_T(
 	// - TODO: is matrix version notably faster?
 	legendre_ptr_->calculate_T(eta_, p_x_);
 
-	Vector<double> re_zeta_m(num_points), re_zeta_m_minus_1(num_points, 1.0);
-	Vector<double> im_zeta_m(num_points), im_zeta_m_minus_1(num_points, 0.0);
+	re_zeta_m_.resize(num_points);
+	im_zeta_m_.resize(num_points);
+
+	re_zeta_m_minus_1_.assign(num_points, 1.0);
+	im_zeta_m_minus_1_.assign(num_points, 0.0);
 
 	#pragma omp parallel
 	{
@@ -364,8 +367,8 @@ void RealSphericalHarmonics::calculate_T(
 			// zeta^m = cos(m*phi) + i*sin(m*phi)
 			#pragma omp for simd schedule(static)
 			for ( int j=0; j<num_points; ++j ) {
-				re_zeta_m[j] = re_zeta_m_minus_1[j]*xhat_[j] - im_zeta_m_minus_1[j]*yhat_[j];  // cos(m*phi)
-				im_zeta_m[j] = re_zeta_m_minus_1[j]*yhat_[j] + im_zeta_m_minus_1[j]*xhat_[j];  // sin(m*phi)
+				re_zeta_m_[j] = re_zeta_m_minus_1_[j]*xhat_[j] - im_zeta_m_minus_1_[j]*yhat_[j];  // cos(m*phi)
+				im_zeta_m_[j] = re_zeta_m_minus_1_[j]*yhat_[j] + im_zeta_m_minus_1_[j]*xhat_[j];  // sin(m*phi)
 			}
 
 			// These loops need to be separate, or the compiler seems to have difficulty
@@ -373,12 +376,12 @@ void RealSphericalHarmonics::calculate_T(
 			#pragma omp for simd schedule(static)
 			for ( int j=0; j<num_points; ++j ) {
 				// m > 0
-				y_l(m, j) = coeff_y_l_[m]*re_zeta_m[j]*p_x_(m,j);  // OPT
+				y_l(m, j) = coeff_y_l_[m]*re_zeta_m_[j]*p_x_(m,j);  // OPT
 			}
 			#pragma omp for simd schedule(static)
 			for ( int j=0; j<num_points; ++j ) {
 				// m < 0
-				y_l(m+l_, j) = coeff_y_l_[m]*im_zeta_m[j]*p_x_(m,j);  // OPT
+				y_l(m+l_, j) = coeff_y_l_[m]*im_zeta_m_[j]*p_x_(m,j);  // OPT
 			}
 
 
@@ -387,8 +390,8 @@ void RealSphericalHarmonics::calculate_T(
 				for ( int j=0; j<num_points; ++j ) {
 					for ( int d=0; d<N_DIM; ++d ) {
 						// FIXME
-						derivs_y_l(m,    j)[d] = m*re_zeta_m_minus_1[j]*re_deriv_zeta_[d][j]*p_x_(m,j);
-						derivs_y_l(m+l_, j)[d] = m*im_zeta_m_minus_1[j]*im_deriv_zeta_[d][j]*p_x_(m,j);
+						derivs_y_l(m,    j)[d] = m*re_zeta_m_minus_1_[j]*re_deriv_zeta_[d][j]*p_x_(m,j);
+						derivs_y_l(m+l_, j)[d] = m*im_zeta_m_minus_1_[j]*im_deriv_zeta_[d][j]*p_x_(m,j);
 					}
 				}
 
@@ -396,8 +399,8 @@ void RealSphericalHarmonics::calculate_T(
 					#pragma omp for simd schedule(static) collapse(2)
 					for ( int j=0; j<num_points; ++j ) {
 						for ( int d=0; d<N_DIM; ++d ) {
-							derivs_y_l(m,    j)[d] += re_zeta_m[j]*p_x_(m+1,j);
-							derivs_y_l(m+l_, j)[d] += im_zeta_m[j]*p_x_(m+1,j);
+							derivs_y_l(m,    j)[d] += re_zeta_m_[j]*p_x_(m+1,j);
+							derivs_y_l(m+l_, j)[d] += im_zeta_m_[j]*p_x_(m+1,j);
 						}
 					}
 				}
@@ -414,8 +417,8 @@ void RealSphericalHarmonics::calculate_T(
 
 			if ( m < l_ ) {
 				// Update for next iteration
-				std::swap( re_zeta_m_minus_1, re_zeta_m );
-				std::swap( im_zeta_m_minus_1, im_zeta_m );
+				std::swap( re_zeta_m_minus_1_, re_zeta_m_ );
+				std::swap( im_zeta_m_minus_1_, im_zeta_m_ );
 			}
 		}
 	} // end pragma omp parallel
