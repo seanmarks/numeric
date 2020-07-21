@@ -46,6 +46,7 @@ list(APPEND NUMERIC_TEST_NAMES "omp-simd/real")
 list(APPEND NUMERIC_TEST_NAMES "omp-simd/complex")
 list(APPEND NUMERIC_TEST_NAMES "omp-simd/complex_array")
 list(APPEND NUMERIC_TEST_NAMES "vector_of_vectors")
+list(APPEND NUMERIC_TEST_NAMES "legendre")
 list(APPEND NUMERIC_TEST_NAMES "spherical_harmonics")
 list(APPEND NUMERIC_TEST_NAMES "real_spherical_harmonics")
 

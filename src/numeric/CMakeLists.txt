@@ -25,6 +25,7 @@ target_sources(numeric PRIVATE ${LIB_NUMERIC_SRC})
 if(VERBOSE_VECTORIZE_FLAGS)
 	# Verbose vectorizer output only for specific files
 	set_source_files_properties(
+			Legendre.cpp
 			RealSphericalHarmonics.cpp
 		PROPERTIES
 			COMPILE_OPTIONS "${VERBOSE_VECTORIZE_FLAGS}"
