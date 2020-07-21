@@ -16,6 +16,7 @@
 #include "numeric/ComplexVector.h"
 #include "numeric/Constants.h"
 #include "numeric/GptlWrappers.h"
+#include "numeric/Legendre.h"
 #include "numeric/Matrix.h"
 #include "numeric/RealSphericalHarmonics.h"
 #include "numeric/SphericalHarmonics.h"

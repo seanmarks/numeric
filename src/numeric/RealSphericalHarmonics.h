@@ -90,6 +90,14 @@ class RealSphericalHarmonics
 		Matrix<Real3>&  derivs_y_l  // FIXME: 3 separate matrices?
 	) const;
 
+	void calculate_T_alt(
+		const VectorReal3&    x,  // (num_points,3)
+		const Vector<double>& r,  // (num_points)
+		const bool            need_derivatives,
+		Matrix<double>& y_l,  // (num_points, l+1)
+		std::array<Matrix<double>,N_DIM>& derivs_y_l
+	) const;
+
 
 	//----- Get/Set Functions -----//
 
@@ -164,13 +172,12 @@ class RealSphericalHarmonics
 	mutable Vector<double> inv_r_, xhat_, yhat_, eta_;  // eta = zhat
 
 	// Re(zeta) = xhat, Im(zeta) = yhat
-	mutable std::array<Vector<double>, N_DIM> re_deriv_zeta_, im_deriv_zeta_, deriv_eta_;
-
-	//mutable Vector<double> re_zeta_,  im_zeta_;
-	//mutable VectorReal3    re_deriv_zeta_, im_deriv_zeta_, deriv_eta_;
+	mutable VectorReal3 re_deriv_zeta_, im_deriv_zeta_, deriv_eta_;
+	mutable std::array<Vector<double>, N_DIM> re_deriv_zeta_alt_, im_deriv_zeta_alt_, deriv_eta_alt_;
 
 	mutable Matrix<double>  p_x_;  // Legendre polynomials (and derivatives)
 
+	// Re/Im[zeta^m] and Re/Im[zeta^(m-1)]
 	mutable Vector<double> re_zeta_m_, re_zeta_m_minus_1_;
 	mutable Vector<double> im_zeta_m_, im_zeta_m_minus_1_;
 };

@@ -167,6 +167,16 @@ int main(int argc, char* argv[])
 	timer_new.stop();
 	comparePerformance(header, 0.0, timer_new, timer_old);
 
+	// New approach #3
+	std::array<Matrix<double>, N_DIM> derivs_y_l_T_arr;
+	timer_new.start();
+	for ( int k=0; k<num_iterations; ++k ) {
+		real_sph_harmonics.calculate_T_alt( points, norms, need_derivatives,
+		                                    y_l_T, derivs_y_l_T_arr );
+	}
+	timer_new.stop();
+	comparePerformance(header, 0.0, timer_new, timer_old);
+
 	// GPTL: done
 	gptl_timer.stop();
 	GPTL::print("gptl.log");

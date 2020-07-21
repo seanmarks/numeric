@@ -239,7 +239,7 @@ T& Matrix<T,V>::operator()(const int i, const int j) noexcept
 {
 	FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
 											"indices (" << i << "," << j << ") are out of bounds "
-											<< "(" num_rows_ << "," << num_cols_ << ")" );
+											<< "(" << num_rows_ << "," << num_cols_ << ")" );
 	return data_[ getLinearIndex(i,j) ];
 	//return data_[ i*num_cols_ + j ];
 }
@@ -251,7 +251,7 @@ const T& Matrix<T,V>::operator()(const int i, const int j) const noexcept
 {
 	FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
 											"indices (" << i << "," << j << ") are out of bounds "
-											<< "(" num_rows_ << "," << num_cols_ << ")" );
+											<< "(" << num_rows_ << "," << num_cols_ << ")" );
 	return data_[ getLinearIndex(i,j) ];
 	//return data_[ i*num_cols_ + j ];
 }

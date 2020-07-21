@@ -72,7 +72,7 @@ class LegendreP0 : public Legendre
  private:
 	static constexpr int l_ = 0;
 
-	static constexpr double COEFF_D0_P0 = 1.0;
+	static constexpr double COEFF_D0_P0 = 1.0/1.0;
 };
 
 
