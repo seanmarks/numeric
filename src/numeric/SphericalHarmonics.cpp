@@ -13,7 +13,6 @@ void SphericalHarmonics::setHarmonicIndex(const int l)
 {
 	FANCY_ASSERT( l >= 0, "invalid harmonic index: " << l );
 
-	// Set harmonic index and number of m-values
 	l_ = l;
 	if ( do_fast_harmonics_ ) {
 		num_m_values_ = l_ + 1;
@@ -22,27 +21,19 @@ void SphericalHarmonics::setHarmonicIndex(const int l)
 		num_m_values_ = 2*l_ + 1;
 	}
 
-	// Set coefficients and necessary legendreP function
+	// Use the appropriate Legendre specialization
 	// - TODO: Register and set using a map?
 	if ( l == 0 ) {
-		coeff_Y_l_ = coeff_Y_0_;
-		legendreP_function_        = [this](const double x, Vector<double>& p)          { legendreP0(x, p); };
-		legendreP_matrix_function_ = [this](const Vector<double>& x, Matrix<double>& p) { legendreP0(x, p); };
+		legendre_ptr_ = std::unique_ptr<Legendre>( new LegendreP0 );
 	}
 	else if ( l == 3 ) {
-		coeff_Y_l_ = coeff_Y_3_;
-		legendreP_function_        = [this](const double x, Vector<double>& p)          { legendreP3(x, p); };
-		legendreP_matrix_function_ = [this](const Vector<double>& x, Matrix<double>& p) { legendreP3(x, p); };
+		legendre_ptr_ = std::unique_ptr<Legendre>( new LegendreP3 );
 	}
 	else if ( l == 4 ) {
-		coeff_Y_l_ = coeff_Y_4_;
-		legendreP_function_        = [this](const double x, Vector<double>& p)          { legendreP4(x, p); };
-		legendreP_matrix_function_ = [this](const Vector<double>& x, Matrix<double>& p) { legendreP4(x, p); };
+		legendre_ptr_ = std::unique_ptr<Legendre>( new LegendreP4 );
 	}
 	else if ( l == 6 ) {
-		coeff_Y_l_ = coeff_Y_6_;
-		legendreP_function_        = [this](const double x, Vector<double>& p)          { legendreP6(x, p); };
-		legendreP_matrix_function_ = [this](const Vector<double>& x, Matrix<double>& p) { legendreP6(x, p); };
+		legendre_ptr_ = std::unique_ptr<Legendre>( new LegendreP6 );
 	}
 	else {
 		std::stringstream err_ss;
@@ -50,11 +41,24 @@ void SphericalHarmonics::setHarmonicIndex(const int l)
 		       << "  Harmonic index l=" << l_ << " is not supported.\n";
 		throw std::runtime_error( err_ss.str() );
 	}
+
+	// Coefficients
+	coeff_Y_l_.resize(l_+1);
+	const double prefac = (2.0*l_ + 1.0)/(4.0*constants::pi);
+	for ( int m=0; m<=l_; ++m ) {
+		coeff_Y_l_[m] = prefac * factorial(l-m)/static_cast<double>(factorial(l+m));
+		if ( m > 0 ) {
+			coeff_Y_l_[m] *= 2.0;  // extra factor not present with complex Y_{l,m}
+		}
+		coeff_Y_l_[m] = sqrt(coeff_Y_l_[m]);
+
+		if ( m % 2 != 0 ) {
+			coeff_Y_l_[m] = -coeff_Y_l_[m];  // Condon-Shortley phase
+		}
+	}
 }
 
 
-// Calculate Y_l,m for m = -l, ... , l
-// - Output format: Y_l: [m=0, 1, ..., l, -1, -2, ... -l] (similarly for derivatives)
 void SphericalHarmonics::calculate_Y_l(
 		const Real3& x, const double r, const bool need_derivatives,
 		VectorComplex& Y_l, VectorComplex3& derivs_Y_l
@@ -107,7 +111,7 @@ void SphericalHarmonics::calculate_Y_l(
 
 	// First, compute the Legendre polynomials and their derivatives
 	Vector<double> p_x(num_m_values_);
-	legendreP_function_(eta, p_x);
+	legendre_ptr_->calculate(eta, p_x);
 
 	// m = 0
 	int m = 0;
@@ -252,7 +256,7 @@ void SphericalHarmonics::calculate(
 	// Compute the Legendre polynomials and their derivatives
 	// - TODO: is matrix version notably faster?
 	p_x_.resize(num_points, num_m_values_);
-	legendreP_matrix_function_(eta_, p_x_);
+	legendre_ptr_->calculate(eta_, p_x_);
 
 
 	//----- Compute Y_{l,m} -----//
@@ -320,121 +324,6 @@ void SphericalHarmonics::calculate(
 	} // end pragma omp parallel
 }
 
-
-void SphericalHarmonics::legendreP0(const double x, Vector<double>& p) const
-{
-	p.assign(1, coeff_Y_0_[0]);
-}
-
-
-void SphericalHarmonics::legendreP3(const double x, Vector<double>& p) const
-{
-	p.resize(4);
-
-	double x2 = x*x;
-	p[0] = COEFF_P3*x*(5.0*x2 - 3.0);
-	p[1] = COEFF_D1_P3*(5.0*x2 - 1.0);
-	p[2] = COEFF_D2_P3*x;
-	p[3] = COEFF_D3_P3;
-}
-
-
-void SphericalHarmonics::legendreP4(const double x, Vector<double>& p) const
-{
-	p.resize(5);
-
-	double x2 = x*x;
-	p[0] = COEFF_P4*(x2*(35.0*x2 - 30.0) + 3.0);
-	p[1] = COEFF_D1_P4*x*(7.0*x2 - 3.0);
-	p[2] = COEFF_D2_P4*(7.0*x2 - 1.0);
-	p[3] = COEFF_D3_P4*x;
-	p[4] = COEFF_D4_P4;
-}
-
-
-void SphericalHarmonics::legendreP6(const double x, Vector<double>& p) const
-{
-	p.resize(7);
-
-	double x2 = x*x;
-	double x2_11 = 11.0*x2;
-	double x2_33 = 33.0*x2;
-	p[0] = COEFF_P6*(x2*(x2*(231.0*x2 - 315.0) + 105.0) - 5.0);
-	p[1] = COEFF_D1_P6*x*(x2*(x2_33 - 30.0) + 5.0);
-	p[2] = COEFF_D2_P6*(x2*(x2_33 - 18.0) + 1.0);
-	p[3] = COEFF_D3_P6*x*(x2_11 - 3.0);
-	p[4] = COEFF_D4_P6*(x2_11 - 1.0);
-	p[5] = COEFF_D5_P6*x;
-	p[6] = COEFF_D6_P6;
-}
-
-
-void SphericalHarmonics::legendreP0(const Vector<double>& x, Matrix<double>& p) const
-{
-	const int num_points = x.size();
-	p.assign( {{num_points, 1}}, coeff_Y_0_[0] );
-}
-
-
-void SphericalHarmonics::legendreP3(const Vector<double>& x, Matrix<double>& p) const
-{
-	const int num_points = x.size();
-	static constexpr int num_cols = 4;
-	p.resize(num_points, num_cols);
-
-	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for
-	for ( int i=0; i<num_points; ++i ) {
-		const double x2 = x[i]*x[i];
-		p(i,0) = COEFF_P3*x[i]*(5.0*x2 - 3.0);
-		p(i,1) = COEFF_D1_P3*(5.0*x2 - 1.0);
-		p(i,2) = COEFF_D2_P3*x[i];
-		p(i,3) = COEFF_D3_P3;
-	}
-}
-
-
-void SphericalHarmonics::legendreP4(const Vector<double>& x, Matrix<double>& p) const
-{
-	const int num_points = x.size();
-	static constexpr int num_cols = 5;
-	p.resize(num_points, num_cols);
-
-	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for
-	for ( int i=0; i<num_points; ++i ) {
-		const double x2 = x[i]*x[i];
-		p(i,0) = COEFF_P4*(x2*(35.0*x2 - 30.0) + 3.0);
-		p(i,1) = COEFF_D1_P4*x[i]*(7.0*x2 - 3.0);
-		p(i,2) = COEFF_D2_P4*(7.0*x2 - 1.0);
-		p(i,3) = COEFF_D3_P4*x[i];
-		p(i,4) = COEFF_D4_P4;
-	}
-}
-
-
-void SphericalHarmonics::legendreP6(const Vector<double>& x, Matrix<double>& p) const
-{
-	const int num_points = x.size();
-	static constexpr int num_cols = 7;
-	p.resize(num_points, num_cols);
-
-	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for
-	for ( int i=0; i<num_points; ++i ) {
-		const double x2 = x[i]*x[i];
-		const double x2_11 = 11.0*x2;
-		const double x2_33 = 33.0*x2;
-		p(i,0) = COEFF_P6*(x2*(x2*(231.0*x2 - 315.0) + 105.0) - 5.0);
-		p(i,1) = COEFF_D1_P6*x[i]*(x2*(x2_33 - 30.0) + 5.0);
-		p(i,2) = COEFF_D2_P6*(x2*(x2_33 - 18.0) + 1.0);
-		p(i,3) = COEFF_D3_P6*x[i]*(x2_11 - 3.0);
-		p(i,4) = COEFF_D4_P6*(x2_11 - 1.0);
-		p(i,5) = COEFF_D5_P6*x[i];
-		p(i,6) = COEFF_D6_P6;
-	}
-}
-
  
 void SphericalHarmonics::calculateModifiedSphericalCoordinates(
 		const Real3& x, double& r, double& phi, double& eta) const
@@ -443,7 +332,7 @@ void SphericalHarmonics::calculateModifiedSphericalCoordinates(
 
 	// Angular variables
 	phi = atan2(x[1], x[0]);  // phi = arctan(y/x)
-	if (phi < 0.0) { phi += 2.0*PI_; }
+	if (phi < 0.0) { phi += 2.0*constants::pi; }
 	eta = x[2]/r;       		  // eta = cos(theta) = z/r
 
 	// Make sure roundoff error doesn't make eta leave the range [-1,1]

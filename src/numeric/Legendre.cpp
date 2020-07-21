@@ -40,7 +40,7 @@ void LegendreP0::calculate_T(const Vector<double>& x, Matrix<double>& p) const
 
 
 
-void LegendreP3::calculate(const double x, Vector<double>& p) const
+void LegendreP3::calculate(const double x, Vector<double>& p) const  // MISSED?
 {
 	p.resize(l_ + 1);
 
@@ -49,7 +49,7 @@ void LegendreP3::calculate(const double x, Vector<double>& p) const
 	p[1] = COEFF_D1_P3*(5.0*x2 - 1.0);
 	p[2] = COEFF_D2_P3*x;
 	p[3] = COEFF_D3_P3;
-}
+}  // MISSED?
 
 
 void LegendreP3::calculate(const Vector<double>& x, Matrix<double>& p) const
@@ -59,13 +59,13 @@ void LegendreP3::calculate(const Vector<double>& x, Matrix<double>& p) const
 	p.resize(num_points, num_cols);
 
 	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for simd schedule(static)
+	#pragma omp parallel for simd schedule(static)  // MISSED?
 	for ( int i=0; i<num_points; ++i ) {
-		const double x2 = x[i]*x[i];
+		const double x2 = x[i]*x[i];  // OPT
 		p(i,0) = COEFF_D0_P3*x[i]*(5.0*x2 - 3.0);
 		p(i,1) = COEFF_D1_P3*(5.0*x2 - 1.0);
 		p(i,2) = COEFF_D2_P3*x[i];
-		p(i,3) = COEFF_D3_P3;
+		p(i,3) = COEFF_D3_P3;  // MISSED?
 	}
 }
 
@@ -77,13 +77,13 @@ void LegendreP3::calculate_T(const Vector<double>& x, Matrix<double>& p) const
 	p.resize(num_rows, num_points);
 
 	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for simd schedule(static)
+	#pragma omp parallel for simd schedule(static)  // MISSED?
 	for ( int i=0; i<num_points; ++i ) {
-		const double x2 = x[i]*x[i];  // 
-		p(0,i) = COEFF_D0_P3*x[i]*(5.0*x2 - 3.0);  // 
-		p(1,i) = COEFF_D1_P3*(5.0*x2 - 1.0);  // 
-		p(2,i) = COEFF_D2_P3*x[i];  // 
-		p(3,i) = COEFF_D3_P3;  // 
+		const double x2 = x[i]*x[i];  // OPT
+		p(0,i) = COEFF_D0_P3*x[i]*(5.0*x2 - 3.0);
+		p(1,i) = COEFF_D1_P3*(5.0*x2 - 1.0);
+		p(2,i) = COEFF_D2_P3*x[i];
+		p(3,i) = COEFF_D3_P3;  // MISSED?
 	}
 
 	/*
@@ -124,7 +124,7 @@ void LegendreP3::calculate_T(const Vector<double>& x, Matrix<double>& p) const
 
 
 
-void LegendreP4::calculate(const double x, Vector<double>& p) const
+void LegendreP4::calculate(const double x, Vector<double>& p) const  // MISSED?
 {
 	p.resize(l_ + 1);
 
@@ -134,26 +134,26 @@ void LegendreP4::calculate(const double x, Vector<double>& p) const
 	p[2] = COEFF_D2_P4*(7.0*x2 - 1.0);
 	p[3] = COEFF_D3_P4*x;
 	p[4] = COEFF_D4_P4;
-}
+}  // MISSED?
 
 
-void LegendreP4::calculate(const Vector<double>& x, Matrix<double>& p) const
+void LegendreP4::calculate(const Vector<double>& x, Matrix<double>& p) const  // MISSED?
 {
 	const int num_points = x.size();
 	static constexpr int num_cols = l_ + 1;
 	p.resize(num_points, num_cols);
 
 	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for simd schedule(static)  // MISSED
+	#pragma omp parallel for simd schedule(static)  // MISSED?
 	for ( int i=0; i<num_points; ++i ) {
 		const double x2 = x[i]*x[i];  // OPT
 		p(i,0) = COEFF_D0_P4*(x2*(35.0*x2 - 30.0) + 3.0);
 		p(i,1) = COEFF_D1_P4*x[i]*(7.0*x2 - 3.0);
 		p(i,2) = COEFF_D2_P4*(7.0*x2 - 1.0);
 		p(i,3) = COEFF_D3_P4*x[i];
-		p(i,4) = COEFF_D4_P4;
+		p(i,4) = COEFF_D4_P4;  // MISSED?
 	}
-}
+}  // MISSED?
 
 
 void LegendreP4::calculate_T(const Vector<double>& x, Matrix<double>& p) const
@@ -163,14 +163,14 @@ void LegendreP4::calculate_T(const Vector<double>& x, Matrix<double>& p) const
 	p.resize(num_rows, num_points);
 
 	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for simd schedule(static)
+	#pragma omp parallel for simd schedule(static)  // MISSED?
 	for ( int i=0; i<num_points; ++i ) {
-		const double x2 = x[i]*x[i];
+		const double x2 = x[i]*x[i];  // OPT
 		p(0,i) = COEFF_D0_P4*(x2*(35.0*x2 - 30.0) + 3.0);
 		p(1,i) = COEFF_D1_P4*x[i]*(7.0*x2 - 3.0);
 		p(2,i) = COEFF_D2_P4*(7.0*x2 - 1.0);
 		p(3,i) = COEFF_D3_P4*x[i];
-		p(4,i) = COEFF_D4_P4;
+		p(4,i) = COEFF_D4_P4;  // MISSED?
 	}
 
 	/*
@@ -228,16 +228,16 @@ void LegendreP6::calculate(const Vector<double>& x, Matrix<double>& p) const
 	p.resize(num_points, num_cols);
 
 	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for simd schedule(static)
+	#pragma omp parallel for simd schedule(static)  // MISSED?
 	for ( int i=0; i<num_points; ++i ) {
-		const double x2 = x[i]*x[i];
+		const double x2 = x[i]*x[i];  // OPT
 		p(i,0) = COEFF_D0_P6*(x2*(x2*(231.0*x2 - 315.0) + 105.0) - 5.0);
 		p(i,1) = COEFF_D1_P6*x[i]*(x2*(33.0*x2 - 30.0) + 5.0);
 		p(i,2) = COEFF_D2_P6*(x2*(33.0*x2 - 18.0) + 1.0);
 		p(i,3) = COEFF_D3_P6*x[i]*(11.0*x2 - 3.0);
 		p(i,4) = COEFF_D4_P6*(11.0*x2 - 1.0);
 		p(i,5) = COEFF_D5_P6*x[i];
-		p(i,6) = COEFF_D6_P6;
+		p(i,6) = COEFF_D6_P6;  // MISSED?
 	}
 }
 
@@ -249,16 +249,16 @@ void LegendreP6::calculate_T(const Vector<double>& x, Matrix<double>& p) const
 	p.resize(num_rows, num_points);
 
 	// TODO OPENMP CHUNKSIZE
-	#pragma omp parallel for simd schedule(static)
+	#pragma omp parallel for simd schedule(static)  // MISSED?
 	for ( int i=0; i<num_points; ++i ) {
-		const double x2 = x[i]*x[i];
+		const double x2 = x[i]*x[i];  // OPT
 		p(0,i) = COEFF_D0_P6*(x2*(x2*(231.0*x2 - 315.0) + 105.0) - 5.0);
 		p(1,i) = COEFF_D1_P6*x[i]*(x2*(33.0*x2 - 30.0) + 5.0);
 		p(2,i) = COEFF_D2_P6*(x2*(33.0*x2 - 18.0) + 1.0);
 		p(3,i) = COEFF_D3_P6*x[i]*(11.0*x2 - 3.0);
 		p(4,i) = COEFF_D4_P6*(11.0*x2 - 1.0);
 		p(5,i) = COEFF_D5_P6*x[i];
-		p(6,i) = COEFF_D6_P6;
+		p(6,i) = COEFF_D6_P6;  // MISSED?
 	}
 
 	/*

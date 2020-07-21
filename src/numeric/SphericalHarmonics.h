@@ -32,6 +32,7 @@
 #include "Assert.h"
 #include "CommonTypes.h"
 #include "Constants.h"
+#include "Legendre.h"
 #include "Matrix.h"
 
 class SphericalHarmonics
@@ -90,18 +91,6 @@ class SphericalHarmonics
 		Matrix<Complex3>& derivs_Y_l
 	) const;
 
-	// Compute Legendre polynomial P_l and first l derivatives
-	// - Output format: p = { P_l, d/dx P_l, ... , d^l/dx^l P_l }
-	void legendreP0(const double x, Vector<double>& p) const;
-	void legendreP3(const double x, Vector<double>& p) const;
-	void legendreP4(const double x, Vector<double>& p) const;
-	void legendreP6(const double x, Vector<double>& p) const;
-
-	void legendreP0(const Vector<double>& x, Matrix<double>& p) const;
-	void legendreP3(const Vector<double>& x, Matrix<double>& p) const;
-	void legendreP4(const Vector<double>& x, Matrix<double>& p) const;
-	void legendreP6(const Vector<double>& x, Matrix<double>& p) const;
-
 
 	//----- Get/Set Functions -----//
 
@@ -157,72 +146,10 @@ class SphericalHarmonics
 
 
  protected:
-	//----- Universal Constants -----//
-	static constexpr double PI_ = constants::pi;
-
-	//----- Coefficients -----//
-
-	// Legendre polynomials 
-	//   COEFF_P{l}       ==>  leading coefficient of P_l(x)
-	//   COEFF_D{m}_P{l}  ==>  leading coefficient of d^m/dx^m P_l(x)
-
-	//static constexpr double COEFF_P2  =  TODO
-
-	static constexpr double COEFF_P3    = 1.0/2.0;
-	static constexpr double COEFF_D1_P3 = 3.0/2.0;
-	static constexpr double COEFF_D2_P3 = 15.0;
-	static constexpr double COEFF_D3_P3 = 15.0;
-
-	static constexpr double COEFF_P4    = 1.0/8.0;
-	static constexpr double COEFF_D1_P4 = 5.0/2.0;
-	static constexpr double COEFF_D2_P4 = 15.0/2.0;
-	static constexpr double COEFF_D3_P4 = 105.0;
-	static constexpr double COEFF_D4_P4 = 105.0;
-
-	//static constexpr double COEFF_P5 = TODO
-
-	static constexpr double COEFF_P6    = 1.0/16.0;
-	static constexpr double COEFF_D1_P6 = 21.0/8.0;
-	static constexpr double COEFF_D2_P6 = 105.0/8.0;
-	static constexpr double COEFF_D3_P6 = 315.0/2.0;
-	static constexpr double COEFF_D4_P6 = 945.0/2.0;
-	static constexpr double COEFF_D5_P6 = 10395.0;
-	static constexpr double COEFF_D6_P6 = 10395.0;
-
-
-	// Spherical harmonics
-	//   COEFF_Y_{l}_{m}  ==>  (-1)^m * sqrt((2*l + 1)/(4*pi) * (l - m)!/(l + m)!)
-	// - TODO
-	//   - Better way to go about this?
-	//   - Could merge these coefficients with P_l ones
-	const Vector<double> coeff_Y_0_ = {
-		0.2820947917738780
-	};
-
-	const Vector<double> coeff_Y_3_ = {{
-		0.7463526651802310,
-		-0.2154534560761000,
-		0.0681323650955522,
-		-0.0278149215755189
-	}};
-
-	const Vector<double> coeff_Y_4_ = {{
-		0.8462843753216340,
-		-0.1892349391515120,
-		0.0446031029038193,
-		-0.0119206806752224,
-		0.0042145970709046
-	}};
-
-	const Vector<double> coeff_Y_6_ = {{
-		1.0171072362820500,
-		-0.1569430538290060,
-		0.0248148756521035,
-		-0.0041358126086839,
-		0.0007550926197968,
-		-0.0001609862874555,
-		0.0000464727381991
-	}};
+	// Calculates n! recursively
+	static constexpr std::size_t factorial(const std::size_t n) {
+		return n > 0 ? n*factorial(n-1) : 1;
+	}
 
 
  private:
@@ -230,14 +157,14 @@ class SphericalHarmonics
 	int num_m_values_;  // = 2*l + 1 (normal) or = l + 1 (do_fast_harmonics)
 
 	// "Fast harmonics:" only compute Y_l,m for m >= 0
-	bool do_fast_harmonics_;
+	bool do_fast_harmonics_ = true;
 
+	// Coefficients
+	//   COEFF_Y_{l}_{m}  ==>  (-1)^m * sqrt((2*l + 1)/(4*pi) * (l - m)!/(l + m)!)
 	Vector<double> coeff_Y_l_;
 
-	// Use to compute Legendre polynomials
-	std::function< void(const double, Vector<double>&) > legendreP_function_;
-
-	std::function< void(const Vector<double>&, Matrix<double>&) > legendreP_matrix_function_;
+	// Use to compute Legendre polynomials and their derivatives
+	std::unique_ptr<Legendre> legendre_ptr_ = nullptr;
 
 	// Buffers
 	// - TODO: make use of these somehow?

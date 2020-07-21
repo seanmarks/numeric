@@ -28,9 +28,12 @@ class Legendre
 	virtual
 	int getHarmonicIndex() const = 0;
 
+	// Compute Legendre polynomial P_l and first l derivatives
+	// - Output format:  p = { P_l, d/dx P_l, ... , d^l/dx^l P_l }
 	virtual
 	void calculate(const double x, Vector<double>& p) const = 0;
 
+	// Matrix version of the above function
 	virtual
 	void calculate(
 		const Vector<double>& x,  // (num_points)
