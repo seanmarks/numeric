@@ -1,4 +1,5 @@
 // Matrix: A flexible 2-dimensional array
+//
 // AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 //
 // - Implemented using a 1-dimensional array (default: std::vector)

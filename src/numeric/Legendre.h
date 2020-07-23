@@ -1,8 +1,11 @@
 // Legendre polynomials and their derivatives
 //
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
+//
 // NOTE
 // - COEFF_D{m}_P{l}  ==>  leading coefficient of d^m/dx^m P_l(x)
 
+#pragma once
 #ifndef LEGENDRE_H
 #define LEGENDRE_H
 

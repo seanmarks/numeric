@@ -1,3 +1,4 @@
+// AUTHOR: Sean M. Marks (https://github.com/seanmarks)
 #include "Legendre.h"
 
 void Legendre::calculate_T(const Vector<double>& x, Matrix<double>& p) const
@@ -16,6 +17,8 @@ void Legendre::calculate_T(const Vector<double>& x, Matrix<double>& p) const
 }
 
 
+// GCC 7.5.0 posts link errors if this definition is not included
+constexpr double LegendreP0::COEFF_D0_P0;
 
 
 void LegendreP0::calculate(const double x, Vector<double>& p) const

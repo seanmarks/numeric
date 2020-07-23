@@ -18,7 +18,7 @@ using TestElement = std::tuple<unsigned,unsigned,T>;  // (outer, inner, value)
 
 int main(int argc, char* argv[])
 {
-	unsigned outer_size = 10;
+	const unsigned outer_size = 10;
 	unsigned min_inner_size = 5;
 
 	VectorOfVectors<int> vec(outer_size, min_inner_size);
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
 	vec.checkInternalConsistency();
 	for ( unsigned j=0; j<num; ++j ) {
 		FANCY_ASSERT( vec(index, j) == static_cast<int>(j),
-		              "bad value (expected " << j << ", got " << vec(index, j) << ")" );
+		              "bad value: expected " << j << ", got " << vec(index, j) );
 	}
 
 	// Check for the values added earlier
@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
 		int j   = std::get<1>(known_elements[k]);
 		int val = std::get<2>(known_elements[k]);
 		FANCY_ASSERT( vec(i, j) == val,
-		              "bad value (expected " << val << ", got " << vec(i, j) << ")" );
+		              "bad value: expected " << val << ", got " << vec(i, j) );
 	}
 
 	std::cout << "dump(vec) = \n";
@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
 
 	// Outer vector size should be the same
 	FANCY_ASSERT( vec.size() == len,
-	              "bad size: got " << vec.size() << ", expected " << len );
+	              "bad size: expected " << len << ", got " << vec.size() );
 
 	// Inner vectors should be empty
 	for ( unsigned i=0; i<len; ++i ) {
@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 
 		for ( unsigned j=0; j<sizes[i]; ++j ) {
 			FANCY_ASSERT( vec(i,j) == static_cast<int>(i),
-			              "bad value: got " << vec(i,j) << ", expected " << i );
+			              "bad value: expected " << i << " got " << vec(i,j) );
 		}
 	}
 
@@ -263,6 +263,7 @@ int main(int argc, char* argv[])
 	std::cout << "Test clear" << std::endl;
 
 	vec.clear();
+	vec.checkInternalConsistency();
 	FANCY_ASSERT( vec.size() == 0,
 	              "bad size (expected " << 0 << ", got " << vec.size() << ")" );
 
@@ -274,13 +275,15 @@ int main(int argc, char* argv[])
 	// Setup
 	vec.clear();
 	vec.resize(outer_size);
+
 	FANCY_ASSERT( vec.size() == outer_size,
-	              "bad value (expected " << outer_size << ", got " << vec.size() << ")" );
+	              "bad value: expected " << outer_size << ", got " << vec.size() );
 	for ( unsigned i=0; i<outer_size; ++i ) {
 		for ( unsigned j=0; j<i; ++j ) {
 			vec.push_back(i, j);
 		}
 	}
+	vec.checkInternalConsistency();
 
 	// Validate setup
 	for ( unsigned i=0; i<outer_size; ++i ) {
@@ -343,6 +346,9 @@ int main(int argc, char* argv[])
 
 	//----- Test append -----//
 
+	std::cout << "Test append" << std::endl;
+	std::cout << "  Two arrays" << std::endl;
+
 	// Make one vector have the lower numbers in a series, and the
 	// other have the upper numbers (for each row)
 	vec.clear();
@@ -364,13 +370,41 @@ int main(int argc, char* argv[])
 
 	// Each row should have the same contents
 	FANCY_ASSERT( vec.size() == outer_size,
-	              "bad size (expected " << outer_size << ", got " << vec.size() << ")" );
+	              "bad size: expected " << outer_size << ", got " << vec.size() );
 	for ( unsigned i=0; i<outer_size; ++i ) {
 		FANCY_ASSERT( vec.size(i) == outer_size,
-		              "bad size (expected " << outer_size << ", got " << vec.size(i) << ")" );
+		              "bad size: expected " << outer_size << ", got " << vec.size(i)  );
 		for ( unsigned j=0; j<outer_size; ++j ) {
 			FANCY_ASSERT( vec(i, j) == static_cast<int>(j),
-			              "bad value (expected " << j << ", got " << vec(index, j) << ")" );
+			              "bad value: expected " << j << ", got " << vec(i, j) );
+		}
+	}
+
+	// Append many VectorOfVectors
+	std::cout << "  Many arrays" << std::endl;
+
+	len = 10;
+	unsigned num_arrays = 20;
+	unsigned inner_size = 1;
+	std::vector<VectorOfVectors<int>> arrays(num_arrays);
+	for ( unsigned k=0; k<num_arrays; ++k ) {
+		arrays[k].resize(len);
+		for ( unsigned i=0; i<len; ++i ) {
+			arrays[k].push_back(i, i+1);
+		}
+		arrays[k].checkInternalConsistency();
+	}
+	vec.reset();
+	vec.append( arrays.begin(), arrays.end() );
+	vec.checkInternalConsistency();
+	FANCY_ASSERT( vec.size() == len,
+	              "bad size: expected " << len << ", got " << vec.size() );
+	for ( unsigned i=0; i<len; ++i ) {
+		FANCY_ASSERT( vec.size(i) == num_arrays,
+		              "bad size: expected " << num_arrays << ", got " << vec.size(i)  );
+		for ( unsigned j=0; j<num_arrays; ++j ) {
+			FANCY_ASSERT( vec(i, j) == static_cast<int>(i+1),
+			              "bad value: expected " << i+1 << ", got " << vec(i, j) );
 		}
 	}
 
