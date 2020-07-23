@@ -227,35 +227,44 @@ int main(int argc, char* argv[])
 	unsigned new_len = len + 2;
 	vec.resize(new_len);
 	vec.checkInternalConsistency();
+	FANCY_ASSERT( vec.size() == new_len,
+		            "bad size: expected " << new_len << ", got " << vec.size() );
 	for ( unsigned i=0; i<len; ++i ) {
 		// Existing subvectors should be unchanged
 		FANCY_ASSERT( vec.size(i) == bck_vec.size(i),
-		              "bad size: got " << vec.size(i) << ", expected " << bck_vec.size(i) );
+		              "bad size: expected " << bck_vec.size(i) << ", got " << vec.size(i) );
 		for ( unsigned j=0; j<vec.size(i); ++j ) {
 			FANCY_ASSERT( vec(i,j) == bck_vec(i,j),
-			              "bad value: got " << vec(i,j) << ", expected " << bck_vec(i,j) );
+			              "bad value: expected " << bck_vec(i,j) << ", got " << vec(i,j) );
 		}
 	}
 	for ( unsigned i=len; i<new_len; ++i ) {
 		// New subvectors should be empty with nonzero capacities
 		FANCY_ASSERT( vec.size(i) == 0,
-		              "bad size: got " << vec.size(i) << ", expected " << 0 );
+		              "bad size: expected " << 0 << ", got " << vec.size(i) );
 		FANCY_ASSERT( vec.capacity(i) > 0,
-		              "bad capacity: got " << vec.capacity(i) << ", expected > 0" );
+		              "bad capacity: expected > 0, got " << vec.capacity(i) );
 	}
 
 
 	// Shrink size
-	/*
 	std::cout << "  shrink" << std::endl;
 	unsigned delta = 4;
-	FANCY_ASSERT( new_len > delta, "unexpectedly small length" );
+	FANCY_ASSERT( new_len > delta, "unexpectedly small length" );  // failsafe
 	new_len -= delta;
-	*/
-
-	std::cout << "dump(vec) = \n";
-	vec.dump(std::cout);
-	std::cout << "\n";
+	vec.resize(new_len);
+	vec.checkInternalConsistency();
+	FANCY_ASSERT( vec.size() == new_len,
+		            "bad size: expected " << new_len << ", got " << vec.size() );
+	for ( unsigned i=0; i<new_len; ++i ) {
+		// Existing subvectors should be unchanged
+		FANCY_ASSERT( vec.size(i) == bck_vec.size(i),
+		              "bad size: expected " << bck_vec.size(i) << ", got " << vec.size(i) );
+		for ( unsigned j=0; j<vec.size(i); ++j ) {
+			FANCY_ASSERT( vec(i,j) == bck_vec(i,j),
+			              "bad value: expected " << bck_vec(i,j) << ", got " << vec(i,j) );
+		}
+	}
 
 
 	//----- Clear -----//
