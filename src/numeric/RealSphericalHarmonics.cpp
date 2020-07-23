@@ -223,7 +223,6 @@ void RealSphericalHarmonics::calculate_T(
 	}
 
 	// Compute the Legendre polynomials and their derivatives
-	// - TODO: is matrix version notably faster?
 	legendre_ptr_->calculate_T(eta_, p_x_);
 
 	re_zeta_m_.resize(num_points);
@@ -302,7 +301,6 @@ void RealSphericalHarmonics::calculate_T(
 					}
 				}
 
-				// TODO: rearrange
 				#pragma omp for simd schedule(static) collapse(2)
 				for ( int j=0; j<num_points; ++j ) {
 					for ( int d=0; d<N_DIM; ++d ) {
@@ -413,7 +411,7 @@ void RealSphericalHarmonics::calculate_T_alt(
 			for ( int d=0; d<N_DIM; ++d ) {
 				#pragma omp for simd schedule(static)
 				for ( int j=0; j<num_points; ++j ) {
-					derivs_y_l[d](m, j) = coeff_y_l_[m]*p_x_(m+1,j)*deriv_eta_alt_[d][j];  // FIXME: l = 0  // MISSED
+					derivs_y_l[d](m, j) = coeff_y_l_[m]*p_x_(m+1,j)*deriv_eta_alt_[d][j];  // FIXME: l = 0  // OPT
 				}
 			}
 		}
@@ -423,8 +421,8 @@ void RealSphericalHarmonics::calculate_T_alt(
 			// zeta^m = cos(m*phi) + i*sin(m*phi)
 			#pragma omp for simd schedule(static)
 			for ( int j=0; j<num_points; ++j ) {
-				re_zeta_m_[j] = re_zeta_m_minus_1_[j]*xhat_[j] - im_zeta_m_minus_1_[j]*yhat_[j];  // cos(m*phi)
-				im_zeta_m_[j] = re_zeta_m_minus_1_[j]*yhat_[j] + im_zeta_m_minus_1_[j]*xhat_[j];  // sin(m*phi)
+				re_zeta_m_[j] = re_zeta_m_minus_1_[j]*xhat_[j] - im_zeta_m_minus_1_[j]*yhat_[j];  // cos(m*phi)  OPT
+				im_zeta_m_[j] = re_zeta_m_minus_1_[j]*yhat_[j] + im_zeta_m_minus_1_[j]*xhat_[j];  // sin(m*phi)  MISSED?!
 			}
 
 			// These loops need to be separate, or the compiler seems to have difficulty
@@ -445,35 +443,35 @@ void RealSphericalHarmonics::calculate_T_alt(
 					// m > 0
 					#pragma omp for simd schedule(static)
 					for ( int j=0; j<num_points; ++j ) {
-						derivs_y_l[d](m,j) = m*(re_zeta_m_minus_1_[j]*re_deriv_zeta_alt_[d][j] 
+						derivs_y_l[d](m,j) = m*(re_zeta_m_minus_1_[j]*re_deriv_zeta_alt_[d][j]   // OPT
 						                        - im_zeta_m_minus_1_[j]*im_deriv_zeta_alt_[d][j])*p_x_(m,j);
 					}
 					if ( m < l_ ) {
 						#pragma omp for simd schedule(static)
 						for ( int j=0; j<num_points; ++j ) {
-							derivs_y_l[d](m, j) += re_zeta_m_[j]*p_x_(m+1,j)*deriv_eta_alt_[d][j];
+							derivs_y_l[d](m, j) += re_zeta_m_[j]*p_x_(m+1,j)*deriv_eta_alt_[d][j];  // OPT
 						}
 					}
 					#pragma omp for simd schedule(static)
 					for ( int j=0; j<num_points; ++j ) {
-						derivs_y_l[d](m, j) *= coeff_y_l_[m];
+						derivs_y_l[d](m, j) *= coeff_y_l_[m];  // OPT
 					}
 
 					// m < 0
 					#pragma omp for simd schedule(static)
 					for ( int j=0; j<num_points; ++j ) {
-						derivs_y_l[d](m+l_,j) = m*(re_zeta_m_minus_1_[j]*im_deriv_zeta_alt_[d][j] 
+						derivs_y_l[d](m+l_,j) = m*(re_zeta_m_minus_1_[j]*im_deriv_zeta_alt_[d][j]  // OPT
 						                           + im_zeta_m_minus_1_[j]*re_deriv_zeta_alt_[d][j])*p_x_(m,j);
 					}
 					if ( m < l_ ) {
 						#pragma omp for simd schedule(static)
 						for ( int j=0; j<num_points; ++j ) {
-							derivs_y_l[d](m+l_, j) += im_zeta_m_[j]*p_x_(m+1,j)*deriv_eta_alt_[d][j];
+							derivs_y_l[d](m+l_, j) += im_zeta_m_[j]*p_x_(m+1,j)*deriv_eta_alt_[d][j];  // OPT
 						}
 					}
 					#pragma omp for simd schedule(static)
 					for ( int j=0; j<num_points; ++j ) {
-						derivs_y_l[d](m+l_, j) *= coeff_y_l_[m];
+						derivs_y_l[d](m+l_, j) *= coeff_y_l_[m];  // OPT
 					}
 				}
 			}

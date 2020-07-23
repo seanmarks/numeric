@@ -76,7 +76,7 @@ class Matrix
 	}
 
 	// Get size(s)
-	const Int2& getShape() const {
+	const Int2 getShape() const {
 		return {{ num_rows_, num_cols_ }}; 
 	}
 
@@ -139,13 +139,13 @@ class Matrix
 	//----- Data access -----//
 
 	// Individual elements
-	T&       operator()(const int i, const int j) noexcept;
-	const T& operator()(const int i, const int j) const noexcept;
+	T&       operator()(const int i, const int j);
+	const T& operator()(const int i, const int j) const;
 
-	T& operator()(const Int2& indices) noexcept {
+	T& operator()(const Int2& indices) {
 		return (*this)(indices[ROW], indices[COL]);
 	}
-	const T& operator()(const Int2& indices) const noexcept {
+	const T& operator()(const Int2& indices) const {
 		return (*this)(indices[ROW], indices[COL]);
 	}
 
@@ -235,7 +235,7 @@ class Matrix
 
 template<typename T, typename V>
 inline
-T& Matrix<T,V>::operator()(const int i, const int j) noexcept
+T& Matrix<T,V>::operator()(const int i, const int j)
 {
 	FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
 											"indices (" << i << "," << j << ") are out of bounds "
@@ -247,7 +247,7 @@ T& Matrix<T,V>::operator()(const int i, const int j) noexcept
 
 template<typename T, typename V>
 inline
-const T& Matrix<T,V>::operator()(const int i, const int j) const noexcept
+const T& Matrix<T,V>::operator()(const int i, const int j) const
 {
 	FANCY_DEBUG_ASSERT( getLinearIndex(i,j) < static_cast<int>(data_.size()),
 											"indices (" << i << "," << j << ") are out of bounds "
@@ -281,8 +281,7 @@ Matrix<T,V> log(const Matrix<T,V>& other)
 	Matrix<T,V> arr_out( other.getShape() );
 	int len = arr_out.data_.size();
 
-	#pragma omp parallel for \
-		default(shared) schedule(static,10)
+	#pragma omp parallel for schedule(static)
 	for ( int i=0; i<len; ++i ) {
 		arr_out.data_[i] = std::log( other.data_[i] );
 	}
