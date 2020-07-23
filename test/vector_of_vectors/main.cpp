@@ -36,14 +36,14 @@ int main(int argc, char* argv[])
 	             "wrong size (expected " << outer_size << ", got " << vec.size() << ")" );
 	unsigned min_total_capacity = outer_size*min_inner_size;
 	FANCY_ASSERT( vec.capacity() >= min_total_capacity,
-	             "bad total capacity (expected >=" << min_total_capacity << ", got " << vec.capacity() << ")" );
+	             "bad total capacity: expected >=" << min_total_capacity << ", got " << vec.capacity() );
 
 	// Inner vectors
 	for ( unsigned i=0; i<outer_size; ++i ) {
 		FANCY_ASSERT( vec.size(i) == 0,
 		              "wrong size (expected " << 0 << ", got " << vec.size(i) << ")" );
 		FANCY_ASSERT( vec.capacity(i) >= min_inner_size,
-		              "bad subvector capacity (expected >= " << min_inner_size << ", got " << vec.capacity(i) << ")" );
+		              "bad subvector capacity: expected >= " << min_inner_size << ", got " << vec.capacity(i) );
 	}
 	std::cout << "  Done" << std::endl;
 
@@ -59,9 +59,9 @@ int main(int argc, char* argv[])
 	vec.resize(index, test_size);
 	vec.checkInternalConsistency();
 	FANCY_ASSERT( vec.size(index) == test_size,
-	              "wrong size (expected " << test_size << ", got " << vec.size(index) << ")" );
+	              "wrong size: expected " << test_size << ", got " << vec.size(index) );
 	FANCY_ASSERT( vec.capacity(index) >= test_size,
-	              "bad capacity (expected >= " << test_size << ", got " << vec.capacity(index) << ")" );
+	              "bad capacity: expected >= " << test_size << ", got " << vec.capacity(index) );
 
 
 	// Shrink
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
 	vec.resize(index, test_size);
 	vec.checkInternalConsistency();
 	FANCY_ASSERT( vec.size(index) == test_size,
-	              "wrong size (expected " << test_size << ", got " << vec.size(index) << ")" );
+	              "wrong size: expected " << test_size << ", got " << vec.size(index) );
 	FANCY_ASSERT( vec.capacity(index) >= test_size,
 	              "bad capacity (expected >= " << test_size << ", got " << vec.capacity(index) << ")" );
 
@@ -80,14 +80,14 @@ int main(int argc, char* argv[])
 	vec.resize(index, test_size);
 	vec.checkInternalConsistency();
 	FANCY_ASSERT( vec.size(index) == test_size,
-	              "wrong size (expected " << test_size << ", got " << vec.size(index) << ")" );
+	              "wrong size: expected " << test_size << ", got " << vec.size(index) );
 	FANCY_ASSERT( vec.capacity(index) >= test_size,
-	              "bad capacity (expected >= " << test_size << ", got " << vec.capacity(index) << ")" );
+	              "bad capacity: expected >= " << test_size << ", got " << vec.capacity(index) );
 
 
-	//----- Test iteration -----//
+	//----- Test data access -----//
 
-	std::cout << "Test iteration" << std::endl;
+	std::cout << "Test data access" << std::endl;
 
 	// Setting and getting values with operator()
 	index = 1;
@@ -116,10 +116,14 @@ int main(int argc, char* argv[])
 
 	std::cout << "Test push_back() on an inner subvector" << std::endl;
 
-	// Set some values *after* where insertion will happen
-	std::vector<TestElement<int>> known_elements;
+	// Reset a subvector to zero size
 	unsigned later_index = 7;
 	vec.reset(later_index);
+	FANCY_ASSERT( vec.size(later_index) == 0,
+	              "bad size: expected " << 0 << ", got " << vec.size(later_index) );
+
+	// Set some values *after* where insertion will happen
+	std::vector<TestElement<int>> known_elements;
 	test_size = 3;
 	for ( unsigned j=0; j<test_size; ++j ) {
 		int val = 4*j - 3;
@@ -168,13 +172,90 @@ int main(int argc, char* argv[])
 
 	std::cout << "Test reset" << std::endl;
 
+	unsigned len = vec.size();  // save size
 	vec.reset();
-	for ( unsigned i=0; i<vec.size(); ++i ) {
+	vec.checkInternalConsistency();
+
+	// Outer vector size should be the same
+	FANCY_ASSERT( vec.size() == len,
+	              "bad size: got " << vec.size() << ", expected " << len );
+
+	// Inner vectors should be empty
+	for ( unsigned i=0; i<len; ++i ) {
 		FANCY_ASSERT( vec.size(i) == 0,
-		              "bad value (expected " << 0 << ", got " << vec.size(i) << ")" );
+		              "bad size: expected " << 0 << ", got " << vec.size(i) );
 		FANCY_ASSERT( vec.capacity(i) > 0,
 		              "subvector capacity is unexpectedly empty" );
 	}
+
+
+	//----- Assign subvector -----//
+
+	std::cout << "Test: subvector assignment" << std::endl;
+
+	vec.reset();
+
+	std::vector<unsigned> sizes(len);
+	for ( unsigned i=0; i<len; ++i ) {
+		sizes[i] = (i % 2) + 2;
+		vec.assign(i, sizes[i], i);
+		vec.checkInternalConsistency();
+	}
+	for ( unsigned i=0; i<len; ++i ) {
+		FANCY_ASSERT( vec.size(i) == sizes[i],
+		              "bad size: expected " << sizes[i] << ", got " << vec.size(i) );
+
+		for ( unsigned j=0; j<sizes[i]; ++j ) {
+			FANCY_ASSERT( vec(i,j) == static_cast<int>(i),
+			              "bad value: got " << vec(i,j) << ", expected " << i );
+		}
+	}
+
+	auto bck_vec = vec;
+
+	std::cout << "dump(vec) = \n";
+	vec.dump(std::cout);
+	std::cout << "\n";
+
+
+	//----- Resize outer vector -----//
+
+	std::cout << "Test: resize outer vector" << std::endl;
+
+	// Extend size
+	std::cout << "  grow" << std::endl;
+	unsigned new_len = len + 2;
+	vec.resize(new_len);
+	vec.checkInternalConsistency();
+	for ( unsigned i=0; i<len; ++i ) {
+		// Existing subvectors should be unchanged
+		FANCY_ASSERT( vec.size(i) == bck_vec.size(i),
+		              "bad size: got " << vec.size(i) << ", expected " << bck_vec.size(i) );
+		for ( unsigned j=0; j<vec.size(i); ++j ) {
+			FANCY_ASSERT( vec(i,j) == bck_vec(i,j),
+			              "bad value: got " << vec(i,j) << ", expected " << bck_vec(i,j) );
+		}
+	}
+	for ( unsigned i=len; i<new_len; ++i ) {
+		// New subvectors should be empty with nonzero capacities
+		FANCY_ASSERT( vec.size(i) == 0,
+		              "bad size: got " << vec.size(i) << ", expected " << 0 );
+		FANCY_ASSERT( vec.capacity(i) > 0,
+		              "bad capacity: got " << vec.capacity(i) << ", expected > 0" );
+	}
+
+
+	// Shrink size
+	/*
+	std::cout << "  shrink" << std::endl;
+	unsigned delta = 4;
+	FANCY_ASSERT( new_len > delta, "unexpectedly small length" );
+	new_len -= delta;
+	*/
+
+	std::cout << "dump(vec) = \n";
+	vec.dump(std::cout);
+	std::cout << "\n";
 
 
 	//----- Clear -----//
@@ -258,6 +339,7 @@ int main(int argc, char* argv[])
 		FANCY_ASSERT( vec.capacity(i) >= new_subvec_capacity,
 		              "bad capacity (expected >= " << new_subvec_capacity << ", got " << vec.capacity(i) << ")" );
 	}
+
 
 	//----- Test append -----//
 
@@ -345,6 +427,8 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	neighbor_list.checkInternalConsistency();
+
 	// Compare results
 	for ( int i=0; i<num_particles; ++i ) {
 		FANCY_ASSERT( neighbor_list.size(i) == ref_list[i].size(), "size mismatch" );
@@ -358,8 +442,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-
-	std::cout << "Done\n";
 
 	return 0;
 };

@@ -61,19 +61,34 @@ class VectorOfVectors
 	// Initialize with specified subvector capacities
 	// - Optionally, also specify the minimum total capacity the object should have
 	// - Will allocate more memory than the minimum
-	VectorOfVectors(const std::vector<size_type>& capacities, const size_type total_capacity = 0) {
-		assignEmptyWithCapacities(capacities, total_capacity);
+	VectorOfVectors(const std::vector<size_type>& sizes) {
+		// TODO
 	}
 
-	// Initialize as 'size' empty subvectors (with some default uniform capacity)
+	// Initialize with specified subvector capacities
+	// - Optionally, also specify the minimum total capacity the object should have
+	//   - An input value of zero means that the default total capacity will be allocated
+	// - Will allocate more memory than the minimum
+	static VectorOfVectors Empty(
+		const std::vector<size_type>& capacities,
+		const size_type total_capacity = 0
+	) {
+		VectorOfVectors obj;
+		obj.assignEmptyWithCapacities(capacities, total_capacity);
+		return obj;
+	}
+
+	// Initialize as 'size' empty subvectors (with the same default uniform capacity)
 	VectorOfVectors(const size_type size):
 		VectorOfVectors(size, initial_default_subvec_capacity_)
 	{}
 
 	// Initialize as 'size' empty subvectors with uniform capacity
-	VectorOfVectors(const size_type size, const size_type subvec_capacity): 
-		VectorOfVectors(std::vector<size_type>(size, subvec_capacity))
-	{}
+	VectorOfVectors(const size_type size, const size_type subvec_capacity):
+		VectorOfVectors()
+	{
+		*this = VectorOfVectors::Empty( std::vector<size_type>(size, subvec_capacity) );
+	}
 
 
 	//----- Data Access -----//
@@ -90,18 +105,16 @@ class VectorOfVectors
 	}
 
 	// Access jth element of ith subvector
-	// - TODO: noexcept iff NDEBUG
-	reference       operator()(const size_type i, const size_type j) noexcept;
-	const_reference operator()(const size_type i, const size_type j) const noexcept;
+	reference       operator()(const size_type i, const size_type j);
+	const_reference operator()(const size_type i, const size_type j) const;
 
 	// Iterate over subvector 'i'
-	// - TODO: noexcept iff NDEBUG
-	SubvectorIterator      begin (const size_type i)       noexcept;
-	SubvectorIterator      end   (const size_type i)       noexcept;
-	SubvectorConstIterator begin (const size_type i) const noexcept;
-	SubvectorConstIterator end   (const size_type i) const noexcept;
-	SubvectorConstIterator cbegin(const size_type i) const noexcept;
-	SubvectorConstIterator cend  (const size_type i) const noexcept;
+	SubvectorIterator      begin (const size_type i);
+	SubvectorIterator      end   (const size_type i);
+	SubvectorConstIterator begin (const size_type i) const;
+	SubvectorConstIterator end   (const size_type i) const;
+	SubvectorConstIterator cbegin(const size_type i) const;
+	SubvectorConstIterator cend  (const size_type i) const;
 
 	// Allocated sizes
 	// - Outer vector
@@ -183,6 +196,13 @@ class VectorOfVectors
 		reset(i);
 	}
 
+	// Resize subvector 'i' to 'new_size' and set all elements to 'value'
+	void assign(const size_type i, const size_type new_size, const T& value) {
+		FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
+		resize(i, new_size);
+		std::for_each( begin(i), end(i), [=](T& element){ element = value; } );
+	}
+
 	// Appends a range of values to the 'i'th subvector
 	// - May cause a reallocation
 	// TODO How to handle self-insertion?
@@ -240,11 +260,14 @@ class VectorOfVectors
 	void assignEmptyWithCapacities(
 		const std::vector<size_type>& capacities,
 		const size_type total_capacity = 0
-	);	
+	);
 
 	// Performs a full reallocation
 	// - Moves all data to a new object that satisfies the specified minimum capacities
 	// - The new total capacity must also be at least as large as the old total capacity
+	// - The final outer size of the object is 'capacities.size()'
+	//   - If the final size is smaller than the inner size, then the data in the
+	//     popped subvectors is discarded
 	// - TODO: apply subvector capacity growth here?
 	void reallocate(std::vector<size_type> capacities);
 
@@ -262,7 +285,7 @@ class VectorOfVectors
 	// Calculates a new subvector capcity, including growth
 	// - This must be at least as large as the current capacity
 	size_type calculateNewSubvectorCapacity(const size_type old_capacity) const {
-		return static_cast<size_type>( std::ceil(subvec_growth_factor_*old_capacity) ); 
+		return static_cast<size_type>( std::ceil(subvec_growth_factor_*old_capacity) );
 	}
 
 	// Total excess capacity beyond the amount allocated for the last subvector
@@ -301,18 +324,18 @@ class VectorOfVectors
 template<typename T, typename V>
 inline
 typename VectorOfVectors<T,V>::reference
-VectorOfVectors<T,V>::operator()(const size_type i, const size_type j) noexcept
+VectorOfVectors<T,V>::operator()(const size_type i, const size_type j)
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 	FANCY_DEBUG_ASSERT( subvec_begins_[i]+j < data_.size(),
 	                    "index " << subvec_begins_[i]+j << " out of bounds: size = " << data_.size() );
 	return data_[subvec_begins_[i] + j];
-} 
+}
 
 template<typename T, typename V>
 inline
 typename VectorOfVectors<T,V>::const_reference
-VectorOfVectors<T,V>::operator()(const size_type i, const size_type j) const noexcept
+VectorOfVectors<T,V>::operator()(const size_type i, const size_type j) const
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 	FANCY_DEBUG_ASSERT( subvec_begins_[i]+j < data_.size(),
@@ -323,7 +346,7 @@ VectorOfVectors<T,V>::operator()(const size_type i, const size_type j) const noe
 template<typename T, typename V>
 inline
 typename VectorOfVectors<T,V>::SubvectorIterator
-VectorOfVectors<T,V>::begin(const size_type i) noexcept
+VectorOfVectors<T,V>::begin(const size_type i)
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 	FANCY_DEBUG_ASSERT( subvec_begins_[i] < data_.size(),
@@ -334,7 +357,7 @@ VectorOfVectors<T,V>::begin(const size_type i) noexcept
 template<typename T, typename V>
 inline
 typename VectorOfVectors<T,V>::SubvectorIterator
-VectorOfVectors<T,V>::end(const size_type i) noexcept 
+VectorOfVectors<T,V>::end(const size_type i)
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 	FANCY_DEBUG_ASSERT( subvec_ends_[i] < data_.size(),
@@ -345,7 +368,7 @@ VectorOfVectors<T,V>::end(const size_type i) noexcept
 template<typename T, typename V>
 inline
 typename VectorOfVectors<T,V>::SubvectorConstIterator
-VectorOfVectors<T,V>::begin (const size_type i) const noexcept
+VectorOfVectors<T,V>::begin (const size_type i) const
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 	FANCY_DEBUG_ASSERT( subvec_begins_[i] < data_.size(),
@@ -356,7 +379,7 @@ VectorOfVectors<T,V>::begin (const size_type i) const noexcept
 template<typename T, typename V>
 inline
 typename VectorOfVectors<T,V>::SubvectorConstIterator
-VectorOfVectors<T,V>::end(const size_type i) const noexcept
+VectorOfVectors<T,V>::end(const size_type i) const
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 	FANCY_DEBUG_ASSERT( subvec_ends_[i] < data_.size(),
@@ -367,7 +390,7 @@ VectorOfVectors<T,V>::end(const size_type i) const noexcept
 template<typename T, typename V>
 inline
 typename VectorOfVectors<T,V>::SubvectorConstIterator
-VectorOfVectors<T,V>::cbegin(const size_type i) const noexcept
+VectorOfVectors<T,V>::cbegin(const size_type i) const
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 	FANCY_DEBUG_ASSERT( subvec_begins_[i] < data_.size(),
@@ -378,7 +401,7 @@ VectorOfVectors<T,V>::cbegin(const size_type i) const noexcept
 template<typename T, typename V>
 inline
 typename VectorOfVectors<T,V>::SubvectorConstIterator
-VectorOfVectors<T,V>::cend(const size_type i) const noexcept
+VectorOfVectors<T,V>::cend(const size_type i) const
 {
 	FANCY_DEBUG_ASSERT( i < size(), "index " << i << " out of bounds: size = " << size() );
 	FANCY_DEBUG_ASSERT( subvec_ends_[i] < data_.size(),
@@ -545,8 +568,8 @@ void VectorOfVectors<T,V>::resize(const size_type new_size)
 template<typename T, typename V>
 void VectorOfVectors<T,V>::resizeWithMinimumCapacities(const std::vector<size_type>& capacities)
 {
-	size_type new_size = capacities.size();
 	size_type old_size = this->size();
+	size_type new_size = capacities.size();
 
 	// Check whether an existing subvector is too small
 	bool need_realloc = false;
@@ -681,32 +704,31 @@ template<typename T, typename V>
 void VectorOfVectors<T,V>::extendCapacity(const size_type i, const size_type new_capacity)
 {
 	size_type old_capacity = capacity(i);
-	if ( new_capacity <= old_capacity ) {
-		return;  // nothing to do
-	}
+	if ( new_capacity > old_capacity ) {
+		size_type extra_capacity_needed = new_capacity - old_capacity;  // non-negative
 
-	size_type extra_capacity_needed = new_capacity - old_capacity;  // non-negative
-
-	size_type outer_size = size();
-	if ( i+1 == outer_size ) {
-		// Extending the last subvector
-		size_type excess_capacity = getExcessCapacity();
-		if ( extra_capacity_needed > excess_capacity ) {
-			// Allocate extra space
-			data_.resize( data_growth_factor_*(data_.size() + new_capacity) );
+		size_type outer_size = size();
+		if ( i+1 == outer_size ) {
+			// Extending the last subvector
+			size_type excess_capacity = getExcessCapacity();
+			if ( extra_capacity_needed > excess_capacity ) {
+				// Allocate extra space
+				data_.resize( data_growth_factor_*(data_.size() + new_capacity) );
+			}
+			subvec_alloc_ends_.back() += extra_capacity_needed;
+			return;
 		}
-		subvec_alloc_ends_.back() += extra_capacity_needed;
-		return;
-	}
-	else {
-		// Insert capacity at the end of the subvector
-		auto pos = data_.begin() + subvec_alloc_ends_[i];
-		data_.insert( pos, extra_capacity_needed, T() );
-		subvec_alloc_ends_[i] += extra_capacity_needed;
-		for ( size_type k=i+1; k<outer_size; ++k ) {
-			subvec_begins_[k]     += extra_capacity_needed;
-			subvec_ends_[k]       += extra_capacity_needed;
-			subvec_alloc_ends_[k] += extra_capacity_needed;
+		else {
+			// Insert capacity at the end of the subvector, pushing all subsequent
+			// elements back
+			auto pos = std::next( data_.begin(), subvec_alloc_ends_[i] );
+			data_.insert( pos, extra_capacity_needed, T() );
+			subvec_alloc_ends_[i] += extra_capacity_needed;
+			for ( size_type k=i+1; k<outer_size; ++k ) {
+				subvec_begins_[k]     += extra_capacity_needed;
+				subvec_ends_[k]       += extra_capacity_needed;
+				subvec_alloc_ends_[k] += extra_capacity_needed;
+			}
 		}
 	}
 #ifndef NDEBUG
@@ -764,7 +786,7 @@ void VectorOfVectors<T,V>::assignEmptyWithCapacities(
 	subvec_alloc_ends_.resize(size);   subvec_alloc_ends_[0] = capacities[0];
 	for ( size_type i=1; i<size; ++i ) {
 		subvec_begins_[i]     = subvec_alloc_ends_[i-1];
-		subvec_ends_[i]       = subvec_begins_[i];
+		subvec_ends_[i]       = subvec_begins_[i];  // empty
 		subvec_alloc_ends_[i] = subvec_begins_[i] + capacities[i];
 	}
 
@@ -779,24 +801,24 @@ void VectorOfVectors<T,V>::reallocate(std::vector<size_type> capacities)
 {
 	// Ensure that no data is lost in existing subvectors that are larger than
 	// the minimum requested
-	size_type new_size = capacities.size();
 	size_type old_size = this->size();
+	size_type new_size = capacities.size();
 	size_type i_max = std::min(old_size, new_size);
 	for ( size_type i=0; i<i_max; ++i ) {
 		capacities[i] = std::max( capacities[i], this->capacity(i) );
 	}
 
 	// Move data to a new object with the appropriate dimensions
-	VectorOfVectors new_obj(capacities, this->capacity());
+	auto new_obj = VectorOfVectors<T,V>::Empty(capacities, this->capacity());
 	using std::swap;  // enable ADL
 	for ( size_type i=0; i<i_max; ++i ) {
-		size_type first = this->subvec_begins_[i];
-		size_type last  = this->subvec_ends_[i];
-		size_type k_new = new_obj.subvec_begins_[i];
-		for ( size_type k = first; k != last; ++k, ++k_new ) {
-			swap( new_obj.data_[k_new], this->data_[k] );
+		auto first  = this->begin(i);
+		auto last   = this->end(i);
+		auto new_it = new_obj.begin(i);
+		for ( auto it = first; it != last; ++it, ++new_it ) {
+			swap( *it, *new_it );
 		}
-		new_obj.subvec_ends_[i] = new_obj.subvec_begins_[i] + this->size(i);
+		new_obj.subvec_ends_[i] += this->size(i);  // update output size
 	}
 
 	// Swap contents with new object
