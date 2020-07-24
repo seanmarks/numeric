@@ -10,7 +10,7 @@ include(GNUInstallDirs)
 # Declare library
 if(BUILD_SHARED_LIBS)
 	add_library(numeric SHARED "")
-	#target_link_options(numeric PUBLIC -rdynamic)
+	target_link_options(numeric PUBLIC -rdynamic)
 else()
 	# Need position-independent code to be able to link to a shared library
 	# - TODO: flag to override this depending on intended purpose (e.g. "LINK_ALL_STATIC")

@@ -214,7 +214,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	auto bck_vec = vec;
 
 	std::cout << "dump(vec) = \n";
 	vec.dump(std::cout);
@@ -224,6 +223,8 @@ int main(int argc, char* argv[])
 	//----- Resize outer vector -----//
 
 	std::cout << "Test: resize outer vector" << std::endl;
+
+	const auto bck_vec = vec;  // save for later comparison
 
 	// Extend size
 	std::cout << "  grow" << std::endl;
@@ -356,10 +357,48 @@ int main(int argc, char* argv[])
 	}
 
 
+	//----- Random push_back -----//
+
+	std::cout << "Test random push_back" << std::endl;
+
+	vec.reset();
+	vec.resize(outer_size);
+
+	StdVectorOfVectors<int> ref_vec(outer_size);  // for checking output
+
+	using IntDistribution  = std::uniform_int_distribution<int>;
+	IntDistribution int_distribution(0, outer_size-1);
+	RandomSampler<IntDistribution> int_sampler( int_distribution, Random::getDebugSequence() );
+
+	unsigned num_values = 100;
+	for ( unsigned k=0; k<num_values; ++k ) {
+		int i     = int_sampler.generate();
+		int value = int_sampler.generate();
+		vec.push_back(i, value);
+		ref_vec[i].push_back(value);
+	}
+	vec.checkInternalConsistency();
+
+	// Check
+	for ( unsigned i=0; i<outer_size; ++i ) {
+		FANCY_ASSERT( vec.size(i) == ref_vec[i].size(),
+		              "bad size: expected " << ref_vec[i].size() << ", got " << vec.size(i)  );
+
+		auto begin = vec.begin(i);
+		auto end   = vec.end(i);
+		bool is_equal = std::equal( begin, end, ref_vec[i].begin() );
+		FANCY_ASSERT( is_equal, "subvectors are different: i=" << i );
+	}
+
+	// DEBUG
+	//std::cout << "dump(vec) = \n";
+	//vec.dump(std::cout);
+	//std::cout << "\n";
+
+
 	//----- Test append -----//
 
-	std::cout << "Test append" << std::endl;
-	std::cout << "  Two arrays" << std::endl;
+	std::cout << "Test append: two arrays" << std::endl;
 
 	// Make one vector have the lower numbers in a series, and the
 	// other have the upper numbers (for each row)
@@ -392,11 +431,56 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// Append many VectorOfVectors
-	std::cout << "  Many arrays" << std::endl;
 
+	//----- Test multi-append -----//
+
+	std::cout << "Test append: many arrays" << std::endl;
+
+	// Start with an array with varying subvector lengths
+	vec = bck_vec;
+	len = vec.size();
+	FANCY_ASSERT(len > 5, "unexpectedly small testing length");
+	ref_vec.resize(len);
+	for ( unsigned i=0; i<len; ++i ) {
+		ref_vec[i].assign( vec.begin(i), vec.end(i) );
+	}
+
+	vec.reset(3);
+	ref_vec[3].clear();
+
+	// Create a series of random arrays
+	unsigned num_new_vecs = 100;
+	num_values = 10;
+	std::vector<VectorOfVectors<int>> new_vecs(num_new_vecs);
+	for ( unsigned n=0; n<num_new_vecs; ++n ) {
+		new_vecs[n].resize(len);
+		for ( unsigned k=0; k<num_values; ++k ) {
+			int i     = int_sampler.generate();
+			int value = int_sampler.generate();
+			new_vecs[n].push_back(i, value);
+
+			ref_vec[i].push_back(value);  // build reference array
+		}
+		new_vecs[n].checkInternalConsistency();
+	}
+
+	// Combine
+	vec.append( new_vecs.begin(), new_vecs.end() );
+	vec.checkInternalConsistency();
+
+	// Check
+	for ( unsigned i=0; i<len; ++i ) {
+		FANCY_ASSERT( vec.size(i) == ref_vec[i].size(),
+		              "bad size: expected " <<  ref_vec[i].size()<< ", got " << vec.size(i)  );
+
+		auto begin = vec.begin(i);
+		auto end   = vec.end(i);
+		bool is_equal = std::equal( begin, end, ref_vec[i].begin() );
+		FANCY_ASSERT( is_equal, "subvectors are different: i=" << i );
+	}
+
+	/*
 	len = 10;
-	unsigned num_arrays = 20;
 	unsigned inner_size = 1;
 	std::vector<VectorOfVectors<int>> arrays(num_arrays);
 	for ( unsigned k=0; k<num_arrays; ++k ) {
@@ -419,45 +503,7 @@ int main(int argc, char* argv[])
 			              "bad value: expected " << i+1 << ", got " << vec(i, j) );
 		}
 	}
-
-
-	//----- Random push_back -----//
-
-	std::cout << "Test random push_back" << std::endl;
-
-	vec.reset();
-	vec.resize(outer_size);
-
-	StdVectorOfVectors<int> ref_vec(outer_size);  // for checking output
-
-	using IntDistribution  = std::uniform_int_distribution<int>;
-	IntDistribution int_distribution(0, outer_size-1);
-	RandomSampler<IntDistribution> int_sampler( int_distribution, Random::getDebugSequence() );
-
-	unsigned num_values = 1000;
-	for ( unsigned k=0; k<num_values; ++k ) {
-		int i     = int_sampler.generate();
-		int value = int_sampler.generate();
-		vec.push_back(i, value);
-		ref_vec[i].push_back(value);
-	}
-	vec.checkInternalConsistency();
-
-	// Check
-	for ( unsigned i=0; i<outer_size; ++i ) {
-		FANCY_ASSERT( vec.size(i) == ref_vec[i].size(),
-		              "bad size: expected " << num_arrays << ", got " << vec.size(i)  );
-
-		auto begin = vec.begin(i);
-		auto end   = vec.end(i);
-		bool is_equal = std::equal( begin, end, ref_vec[i].begin() );
-		FANCY_ASSERT( is_equal, "subvectors are different: i=" << i );
-	}
-
-	// DEBUG
-	//std::cout << "dump(vec) = \n";
-	//vec.dump(std::cout);
-	//std::cout << "\n";
+	*/
 
 
 	//----- Neighbor search -----//

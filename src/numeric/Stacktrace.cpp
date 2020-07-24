@@ -40,6 +40,11 @@ std::string stacktrace(const unsigned int max_num_frames, const unsigned int ski
 	// this array must be free()-ed
 	char** symbollist = backtrace_symbols(addrlist, num_frames);
 
+	ss << "RAW\n";
+	for ( int i=skip; i<num_frames; ++i ) {
+		ss << i << "  " << symbollist[i] << "\n";
+	}
+
 	// allocate string which will be filled with the demangled function name
 	size_t funcnamesize = 256;
 	char* funcname = (char*)malloc(funcnamesize);
@@ -47,6 +52,7 @@ std::string stacktrace(const unsigned int max_num_frames, const unsigned int ski
 	char buffer[1024];  // for snprintf
 
 	try {
+		ss << "PROCESSED\n";
 		// iterate over the returned symbol lines. skip the first, it is the
 		// address of this function.
 		for (int i = skip; i < num_frames; i++) {
@@ -83,15 +89,15 @@ std::string stacktrace(const unsigned int max_num_frames, const unsigned int ski
 																				funcname, &funcnamesize, &status);
 				if (status == 0) {
 					funcname = ret; // use possibly realloc()-ed string
-					snprintf(buffer, sizeof(buffer), "  %s : %s+%s\n",
-					         symbollist[i], funcname, begin_offset);
+					snprintf(buffer, sizeof(buffer), "%-3d %s : %s+%s\n",
+					         i, symbollist[i], funcname, begin_offset);
 					ss << buffer;
 				}
 				else {
 					// demangling failed. Output function name as a C function with
 					// no arguments.
-					snprintf(buffer, sizeof(buffer), "  %s : %s()+%s\n",
-					         symbollist[i], begin_name, begin_offset);
+					snprintf(buffer, sizeof(buffer), "%-3d %s : %s()+%s\n",
+					         i, symbollist[i], begin_name, begin_offset);
 					ss << buffer;
 				}
 			}
