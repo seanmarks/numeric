@@ -35,6 +35,11 @@ class RandomSampler
 		const std::vector<int>& seeds
 	);
 
+	// Generate a single random value
+	value_type generate() {
+		return distribution_(*engine_ptr_);
+	}
+
 	// Produces a random sample
 	// - TODO: return by value?
 	void generate(

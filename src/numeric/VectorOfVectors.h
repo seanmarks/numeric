@@ -14,13 +14,16 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <exception>
 #include <iterator>
 #include <numeric>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
 #include "Assert.h"
-
+#include "Backtrace.h"
+//#include "Stacktrace.h"
 
 template<typename T, typename Vector = std::vector<T>>
 class VectorOfVectors
@@ -185,7 +188,7 @@ class VectorOfVectors
 
 	// Extend the capacity of the 'i'th subvector to be at least 'new_capacity'
 	// - May cause a reallocation
-	void extendCapacity(const size_type i, const size_type new_capacity);
+	void reserve(const size_type i, const size_type new_capacity);
 
 	// Reset the contents of subvector 'i'
 	void reset(const size_type i) {
@@ -560,7 +563,15 @@ void VectorOfVectors<T,V>::resize(const size_type new_size)
 		subvec_alloc_ends_.resize(new_size);
 	}
 #ifndef NDEBUG
-	checkInternalConsistency();
+	try {
+		checkInternalConsistency();
+	}
+	catch ( const std::exception& ex ) {
+		std::cerr << "Caught exception in " << LOCATION_IN_SOURCE_STRING << "\n"
+		          << ex.what() << std::endl
+		          << debug::getBacktrace() << std::endl;
+		throw;
+	}
 #endif // ifndef NDEBUG
 }
 
@@ -613,7 +624,15 @@ void VectorOfVectors<T,V>::resizeWithMinimumCapacities(const std::vector<size_ty
 	}
 
 #ifndef NDEBUG
-	checkInternalConsistency();
+	try {
+		checkInternalConsistency();
+	}
+	catch ( const std::exception& ex ) {
+		std::cerr << "Caught exception in " << LOCATION_IN_SOURCE_STRING << "\n"
+		          << ex.what() << std::endl
+		          << debug::getBacktrace() << std::endl;
+		throw;
+	}
 #endif // ifndef NDEBUG
 }
 
@@ -666,7 +685,7 @@ void VectorOfVectors<T,V>::push_back(const size_type i, const T& value)
 	if ( getExcessCapacity(i) == 0 ) {
 		// Need to allocate more space
 		size_type new_capacity = calculateNewSubvectorCapacity( capacity(i) );
-		extendCapacity(i, new_capacity);
+		reserve(i, new_capacity);
 	}
 
 	// Append element
@@ -674,7 +693,15 @@ void VectorOfVectors<T,V>::push_back(const size_type i, const T& value)
 	++(subvec_ends_[i]);
 
 #ifndef NDEBUG
-	checkInternalConsistency();
+	try {
+		checkInternalConsistency();
+	}
+	catch ( const std::exception& ex ) {
+		std::cerr << "Caught exception in " << LOCATION_IN_SOURCE_STRING << "\n"
+		          << ex.what() << std::endl
+		          << debug::getBacktrace() << std::endl;
+		throw;
+	}
 #endif // ifndef NDEBUG
 }
 
@@ -688,35 +715,43 @@ void VectorOfVectors<T,V>::resize(const size_type i, const size_type new_size)
 	if ( new_size > capacity(i) ) {
 		// Need to allocate more spece
 		size_type new_capacity = calculateNewSubvectorCapacity( new_size );
-		extendCapacity(i, new_capacity);
+		reserve(i, new_capacity);
 	}
 
 	// Update size
 	subvec_ends_[i] = subvec_begins_[i] + new_size;
 
 #ifndef NDEBUG
-	checkInternalConsistency();
+	try {
+		checkInternalConsistency();
+	}
+	catch ( const std::exception& ex ) {
+		std::cerr << "Caught exception in " << LOCATION_IN_SOURCE_STRING << "\n"
+		          << ex.what() << std::endl
+		          << debug::getBacktrace() << std::endl;
+		throw;
+	}
 #endif // ifndef NDEBUG
 }
 
 
 template<typename T, typename V>
-void VectorOfVectors<T,V>::extendCapacity(const size_type i, const size_type new_capacity)
+void VectorOfVectors<T,V>::reserve(const size_type i, const size_type new_capacity)
 {
-	size_type old_capacity = capacity(i);
+	auto old_capacity = capacity(i);
 	if ( new_capacity > old_capacity ) {
 		size_type extra_capacity_needed = new_capacity - old_capacity;  // non-negative
 
-		size_type outer_size = size();
+		auto outer_size = size();
 		if ( i+1 == outer_size ) {
 			// Extending the last subvector
-			size_type excess_capacity = getExcessCapacity();
+			auto excess_capacity = getExcessCapacity();
 			if ( extra_capacity_needed > excess_capacity ) {
 				// Allocate extra space
-				data_.resize( data_growth_factor_*(data_.size() + new_capacity) );
+				auto new_capacity = calculateNewTotalCapacity( data_.size() + extra_capacity_needed );
+				data_.resize( new_capacity );
 			}
 			subvec_alloc_ends_.back() += extra_capacity_needed;
-			return;
 		}
 		else {
 			// Insert capacity at the end of the subvector, pushing all subsequent
@@ -732,7 +767,15 @@ void VectorOfVectors<T,V>::extendCapacity(const size_type i, const size_type new
 		}
 	}
 #ifndef NDEBUG
-	checkInternalConsistency();
+	try {
+		checkInternalConsistency();
+	}
+	catch ( const std::exception& ex ) {
+		std::cerr << "Caught exception in " << LOCATION_IN_SOURCE_STRING << "\n"
+		          << ex.what() << std::endl
+		          << debug::getBacktrace() << std::endl;
+		throw;
+	}
 #endif // ifndef NDEBUG
 }
 
@@ -791,7 +834,15 @@ void VectorOfVectors<T,V>::assignEmptyWithCapacities(
 	}
 
 #ifndef NDEBUG
-	checkInternalConsistency();
+	try {
+		checkInternalConsistency();
+	}
+	catch ( const std::exception& ex ) {
+		std::cerr << "Caught exception in " << LOCATION_IN_SOURCE_STRING << "\n"
+		          << ex.what() << std::endl
+		          << debug::getBacktrace() << std::endl;
+		throw;
+	}
 #endif // ifndef NDEBUG
 }
 
@@ -825,7 +876,15 @@ void VectorOfVectors<T,V>::reallocate(std::vector<size_type> capacities)
 	swap(*this, new_obj);
 
 #ifndef NDEBUG
-	checkInternalConsistency();
+	try {
+		checkInternalConsistency();
+	}
+	catch ( const std::exception& ex ) {
+		std::cerr << "Caught exception in " << LOCATION_IN_SOURCE_STRING << "\n"
+		          << ex.what() << std::endl
+		          << debug::getBacktrace() << std::endl;
+		throw;
+	}
 #endif // ifndef NDEBUG
 }
 
@@ -868,7 +927,15 @@ void VectorOfVectors<T,V>::allocateNewSubvectorAtEndUnsafe(const size_type capac
 	subvec_alloc_ends_.push_back( first + capacity );
 
 #ifndef NDEBUG
-	checkInternalConsistency();
+	try {
+		checkInternalConsistency();
+	}
+	catch ( const std::exception& ex ) {
+		std::cerr << "Caught exception in " << LOCATION_IN_SOURCE_STRING << "\n"
+		          << ex.what() << std::endl
+		          << debug::getBacktrace() << std::endl;
+		throw;
+	}
 #endif // ifndef NDEBUG
 }
 

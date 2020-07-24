@@ -16,6 +16,9 @@
 template<typename T>
 using TestElement = std::tuple<unsigned,unsigned,T>;  // (outer, inner, value)
 
+template<typename T>
+using StdVectorOfVectors = std::vector<std::vector<T>>;
+
 int main(int argc, char* argv[])
 {
 	const unsigned outer_size = 10;
@@ -418,6 +421,45 @@ int main(int argc, char* argv[])
 	}
 
 
+	//----- Random push_back -----//
+
+	std::cout << "Test random push_back" << std::endl;
+
+	vec.reset();
+	vec.resize(outer_size);
+
+	StdVectorOfVectors<int> ref_vec(outer_size);  // for checking output
+
+	using IntDistribution  = std::uniform_int_distribution<int>;
+	IntDistribution int_distribution(0, outer_size-1);
+	RandomSampler<IntDistribution> int_sampler( int_distribution, Random::getDebugSequence() );
+
+	unsigned num_values = 1000;
+	for ( unsigned k=0; k<num_values; ++k ) {
+		int i     = int_sampler.generate();
+		int value = int_sampler.generate();
+		vec.push_back(i, value);
+		ref_vec[i].push_back(value);
+	}
+	vec.checkInternalConsistency();
+
+	// Check
+	for ( unsigned i=0; i<outer_size; ++i ) {
+		FANCY_ASSERT( vec.size(i) == ref_vec[i].size(),
+		              "bad size: expected " << num_arrays << ", got " << vec.size(i)  );
+
+		auto begin = vec.begin(i);
+		auto end   = vec.end(i);
+		bool is_equal = std::equal( begin, end, ref_vec[i].begin() );
+		FANCY_ASSERT( is_equal, "subvectors are different: i=" << i );
+	}
+
+	// DEBUG
+	//std::cout << "dump(vec) = \n";
+	//vec.dump(std::cout);
+	//std::cout << "\n";
+
+
 	//----- Neighbor search -----//
 
 	std::cout << "Test using neighbor search" << std::endl;
@@ -448,7 +490,7 @@ int main(int argc, char* argv[])
 
 	// Build a neighbor list using different data structures
 	VectorOfVectors<int> neighbor_list(num_particles, 2);
-	std::vector<std::vector<int>> ref_list(num_particles);
+	StdVectorOfVectors<int> ref_list(num_particles);
 	for ( int i=0; i<num_particles; ++i ) {
 		for ( int j=i+1; j<num_particles; ++j ) {
 			// Distance between particles
