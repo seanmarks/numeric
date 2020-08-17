@@ -41,6 +41,11 @@ class Matrix
 	Matrix(const int num_rows, const int num_cols) {
 		resize(num_rows, num_cols);
 	}
+	
+	Matrix(const int num_rows, const int num_cols, const T& value) {
+		resize(num_rows, num_cols);
+		assign(value);
+	}
 
 	Matrix(const Int2& shape) {
 		resize(shape);

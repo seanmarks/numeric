@@ -75,27 +75,27 @@ class RealSphericalHarmonics
 	//----- Spherical harmonics: y_{l,m} -----//
 
 	void calculate(
-		const VectorReal3&    x,  // (num_points,3)
+		const VectorReal3&    x,  // (num_points, N_DIM)
 		const Vector<double>& r,  // (num_points)
 		const bool            need_derivatives,
-		Matrix<double>& y_l,        // (num_points, l+1)
-		Matrix<Real3>&  derivs_y_l  // FIXME: 3 separate matrices?
+		Matrix<double>& y_l,        // (num_points, 2*l+1)
+		Matrix<Real3>&  derivs_y_l  // (num_points, 2*l+1) x N_DIM
 	) const;
 
 	void calculate_T(
-		const VectorReal3&    x,  // (num_points,3)
+		const VectorReal3&    x,  // (num_points,N_DIM)
 		const Vector<double>& r,  // (num_points)
 		const bool            need_derivatives,
-		Matrix<double>& y_l,        // (num_points, l+1)
-		Matrix<Real3>&  derivs_y_l  // FIXME: 3 separate matrices?
+		Matrix<double>& y_l,        // (2*l+1, num_points)
+		Matrix<Real3>&  derivs_y_l  // (2*l+1, num_points) x N_DIM
 	) const;
 
 	void calculate_T_alt(
-		const VectorReal3&    x,  // (num_points,3)
+		const VectorReal3&    x,  // (num_points,N_DIM)
 		const Vector<double>& r,  // (num_points)
 		const bool            need_derivatives,
-		Matrix<double>& y_l,  // (num_points, l+1)
-		std::array<Matrix<double>,N_DIM>& derivs_y_l
+		Matrix<double>& y_l,  // (2*l+1, num_points)
+		std::array<Matrix<double>,N_DIM>& derivs_y_l  //  N_DIM x (2*l+1, num_points)
 	) const;
 
 

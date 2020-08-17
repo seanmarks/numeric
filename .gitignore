@@ -58,3 +58,6 @@ manual/*.out
 manual/*.bbl
 manual/*.blg
 manual/*.bak
+
+# VS Code files
+.vscode

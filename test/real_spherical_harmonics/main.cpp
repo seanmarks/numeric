@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 	std::cout << "//----------------------------------//" << std::endl;
 	std::cout  << std::endl;
 
-	// Number of values
+	// Number of values each for theta and phi
 	int num_samples_per_angle = 100;
 
 	// Number of iterations to perform
@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 	bool need_derivatives  = true;
 	SphericalHarmonics sph_harmonics(l, do_fast_harmonics);
 
-	// Old approach
+	// Old approach: complex harmonics
 	std::vector<SphericalHarmonicsOutput> old_outputs(num_points);
 	timer_old.start();
 	for ( int k=0; k<num_iterations; ++k ) {
@@ -146,10 +146,11 @@ int main(int argc, char* argv[])
 
 
 	RealSphericalHarmonics real_sph_harmonics(l);
-	Matrix<double> y_l,        y_l_T;
-	Matrix<Real3>  derivs_y_l, derivs_y_l_T;
+	
 
 	// New approach #1
+	Matrix<double> y_l;         // (num_points, 2*l+1)
+	Matrix<Real3>  derivs_y_l;  // (num_points, 2*l+1) x N_DIM
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		real_sph_harmonics.calculate( points, norms, need_derivatives,
@@ -159,6 +160,8 @@ int main(int argc, char* argv[])
 	comparePerformance(header, 0.0, timer_new, timer_old);
 
 	// New approach #2
+	Matrix<double> y_l_T;         // (2*l+1, num_points)
+	Matrix<Real3>  derivs_y_l_T;  // (2*l+1, num_points) x N_DIM
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
 		real_sph_harmonics.calculate_T( points, norms, need_derivatives,
@@ -168,6 +171,8 @@ int main(int argc, char* argv[])
 	comparePerformance(header, 0.0, timer_new, timer_old);
 
 	// New approach #3
+	// - y_l_T:  (2*l+1, num_points)
+	// - derivs_y_l_T_arr:  N_DIM x (2*l+1, num_points)
 	std::array<Matrix<double>, N_DIM> derivs_y_l_T_arr;
 	timer_new.start();
 	for ( int k=0; k<num_iterations; ++k ) {
@@ -176,6 +181,8 @@ int main(int argc, char* argv[])
 	}
 	timer_new.stop();
 	comparePerformance(header, 0.0, timer_new, timer_old);
+
+	std::cout << "Done" << std::endl;
 
 	// GPTL: done
 	gptl_timer.stop();
